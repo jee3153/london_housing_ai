@@ -1,0 +1,18 @@
+{
+  "dataframe_split": {
+    "columns": [
+      "area_in_sqft",
+      "house_type",
+      "location",
+      "no_bedrooms"
+    ],
+    "data": [
+      [
+        920,
+        "Flat / Apartment",
+        "Islington",
+        2
+      ]
+    ]
+  }
+}

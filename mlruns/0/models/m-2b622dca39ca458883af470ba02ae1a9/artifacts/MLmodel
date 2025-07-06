@@ -1,0 +1,22 @@
+artifact_path: /Users/eunjee.yang/code/ai_platform/mlruns/0/models/m-2b622dca39ca458883af470ba02ae1a9/artifacts
+flavors:
+  catboost:
+    catboost_version: 1.2.8
+    code: null
+    data: model.cb
+    model_type: CatBoostRegressor
+    save_format: cbm
+  python_function:
+    data: model.cb
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.catboost
+    python_version: 3.12.10
+mlflow_version: 3.1.1
+model_id: m-2b622dca39ca458883af470ba02ae1a9
+model_size_bytes: 1349856
+model_uuid: m-2b622dca39ca458883af470ba02ae1a9
+prompts: null
+run_id: a72be1962bc3459088df3a3830a40b55
+utc_time_created: '2025-07-05 17:40:53.368928'
