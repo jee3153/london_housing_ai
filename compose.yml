@@ -1,35 +1,44 @@
 services:
-  app:
+  train:
     depends_on:
-      - db
+      - postgres
+      - mlflow
+    working_dir: /app
+    command: python train/main.py  
     build: .
     volumes:
       - ./src:/app
+      - ./mlruns:/mlruns
     ports:
       - "8000:8000" 
     environment:
+      MLFLOW_TRACKING_URI: http://mlflow:5000
       POSTGRES_PORT: 5432
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: mypostgres   
-  db:
+      MODE: PROD
+      PYTHONPATH: /app  
+        
+  postgres:
     image: postgres:16
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: mypostgres
+      POSTGRES_DB: postgres
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
 
   mlflow:
-    image: ghcr.io/mlflow/mlflow:v3.1.1
+    build:
+      context: .
+      dockerfile: Dockerfile.mlflow
     container_name: mlflow
     depends_on:
-      - db
+      - postgres
     environment:
-      MLFOW_BACKEND_STORE_URI: postgresql+psycopg2://postgres:password@postgres:5432/mypostgres
+      MLFLOW_BACKEND_STORE_URI: postgresql://postgres:password@postgres:5432/postgres
       MLFLOW_DEFAULT_ARTIFACT_ROOT: /mlruns
     ports:
       - "5000:5000"
@@ -37,7 +46,25 @@ services:
       - ./mlruns:/mlruns
     command: >
       mlflow server
-        --backend-store-uri postgres+psycopg2://postgres:password@postgres:5432/mypostgres     
+        --backend-store-uri postgresql://postgres:password@postgres:5432/postgres     
         --default-artifact-root /mlruns   
         --host 0.0.0.0
         --port 5000
+
+  api:
+    build: .
+    working_dir: /app
+    command: uvicorn api.main:app --host 0.0.0.0 --port 7777
+    depends_on:
+      - mlflow
+    ports:
+      - "7777:7777"  
+    environment:
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      PYTHONPATH: /app  
+    volumes:
+      - ./src:/app
+      - ./mlruns:/mlruns    
+
+volumes:
+  pgdata:      

@@ -1,3 +1,4 @@
+import mlflow.models
 import pandas as pd
 import numpy as np
 from pandas import DataFrame, Series
@@ -55,6 +56,10 @@ class ModelTrainer:
         return df_train, df_test  
 
     def train(self):
+        print("Setting MLflow tracking URI to http://mlflow:5000")
+        mlflow.set_tracking_uri("http://mlflow:5000")
+        print("Current tracking URI is:", mlflow.get_tracking_uri())
+        
         train_set, test_set = self.split_test_train_set("price")
         
         y_column = ["price"]
@@ -91,16 +96,27 @@ class ModelTrainer:
 
         price = self.df["price"]
         print("Skew:", st.skew(price), "  Kurtosis:", st.kurtosis(price, fisher=False))
-
-        with mlflow.start_run():
+        with mlflow.start_run() as run:
             mlflow.log_param("model_type", "CatBoostRegression")
             mlflow.log_param("features", x_test.columns.tolist())
             mlflow.log_metric("rmse", rmse)
+            name = "catboost_model"
             mlflow.catboost.log_model(
                 cb_model=model, 
-                name="catboost_model",
+                name=name,
                 signature=signature,
                 input_example=x_train.iloc[:1] # single row example
+            )
+
+            eval_df = x_test.copy()
+            eval_df["price"] = y_test
+
+            mlflow.models.evaluate(
+                model=f"runs:/{run.info.run_id}/{name}",
+                data=eval_df,
+                targets="price",
+                model_type="regressor",
+                evaluators=["default"]
             )
 
         

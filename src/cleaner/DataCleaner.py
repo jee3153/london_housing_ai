@@ -29,7 +29,11 @@ class DataCleaner:
         today = datetime.date.fromtimestamp(time.time())
         table_name = self.table_name_from_date(today.isoformat())
         engine = self.engine.get_engine()
-        df.to_sql(table_name, engine, if_exists="fail", index=False)
+        
+        try:
+            df.to_sql(table_name, engine, if_exists="fail", index=False)
+        except:
+            print(f"not storing data to {table_name} since it already exists.")    
         
         return df
     

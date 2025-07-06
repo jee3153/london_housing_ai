@@ -10,14 +10,14 @@ This project addresses that pain by automating the data ingestion, cleaning, and
 ## Features
 - [x] Automated data loading and cleaning from CSV
 - [x] Persist cleaned data to database (SQLite)
-- [ ] Feature engineering (postcode, house types, etc.)
-- [ ] Model training and evaluation
-- [ ] Experiment tracking with MLflow
+- [x] Feature engineering (postcode, house types, etc.)
+- [x] Model training and evaluation
+- [x] Experiment tracking with MLflow
 - [ ] Model versioning/registry
 - [ ] Model serving (API)
 - [ ] Docker/Cloud deployment
 
-## Setup
+## Setup: Local machine
 1. Setup postgres
 ```bash
 docker run -p 5432:5432 -e POSTGRES_PASSWORD=password -d mypostgres
@@ -30,3 +30,24 @@ mlflow server \
   --default-artifact-root ./mlruns \
   --host 0.0.0.0
 ```
+
+## Setup: docker compose
+1. compose up all components
+```bash
+docker compose build
+```
+
+2. run train
+runs training, log model to MLflow/artifacts
+```bash
+docker compose run train
+```
+
+3. up api service
+```bash
+docker compose up api
+```
+
+## Troubleshoot tips
+If you are having failure for second compose up,
+try deleting `/mlruns` directory, and run train again.
