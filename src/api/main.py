@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 import mlflow.pyfunc
 import pandas as pd
+import numpy as np
 from mlflow.tracking import MlflowClient
 
 client = MlflowClient(tracking_uri="http://mlflow:5000")
@@ -26,4 +27,4 @@ class HousingData(BaseModel):
 def predict(data: HousingData):
     df = pd.DataFrame([data.model_dump()])
     preds = model.predict(df)
-    return {"predicted_price": preds[0]}
+    return {"predicted_price": round(np.expm1(preds[0]), 2)}

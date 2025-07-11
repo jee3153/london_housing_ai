@@ -4,7 +4,7 @@ services:
       - postgres
       - mlflow
     working_dir: /app
-    command: python train/main.py  
+    command: python train/main.py --config config_dataset2.yaml --csv May-2025-data.csv
     build: .
     volumes:
       - ./src:/app

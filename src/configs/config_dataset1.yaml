@@ -1,0 +1,29 @@
+column_mapping:
+  Area in sq ft: area_in_sqft
+  No. of Bedrooms: no_bedrooms
+  Price: price
+  Location: location
+  House Type: house_type
+  Postal Code: postal_code
+required_columns:
+  - area_in_sqft
+  - no_bedrooms
+  - house_type
+  - location
+  - price
+cleaning:
+  drop_na: true
+  house_type_lower: true
+feature_engineering:  
+  map_postcode_to_district: true
+  house_type:
+    flat / apartment:
+      - studio
+    house:
+      - bungalow
+      - duplex
+      - mews  
+    new development: 
+      - penthouse
+  location:
+    larger_or_equal_to: 10

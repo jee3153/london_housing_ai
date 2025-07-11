@@ -1,0 +1,54 @@
+column_mapping:
+  property_type: house_type
+  postcode: postal_code
+aug_columns:
+  POSTCODE: postal_code
+  TOTAL_FLOOR_AREA: area_in_sqft
+  NUMBER_HABITABLE_ROOMS: no_bedrooms
+aug_dtype:
+  POSTCODE: string
+  TOTAL_FLOOR_AREA: integer
+  NUMBER_HABITABLE_ROOMS: integer
+required_columns:
+  - area_in_sqft
+  - no_bedrooms
+  - house_type
+  - location
+  - price
+cleaning:
+  drop_na: true
+  house_type_lower: true
+  filter_county: true
+  handle_skew: true
+  convert_to_sqft_from: m
+  missing_columns:
+    - transaction_id
+    - price
+    - date
+    - postal_code
+    - house_type
+    - old/new
+    - duration
+    - paon
+    - saon
+    - street
+    - locality
+    - town/city
+    - district
+    - county
+    - ppdcategory_type
+    - record_status
+feature_engineering:  
+  map_postcode_to_district: true
+  house_type:
+    flat / apartment:
+      - studio
+    house:
+      - bungalow
+      - duplex
+      - mews  
+    new development: 
+      - penthouse
+  location:
+    larger_or_equal_to: 10
+  file_name: domestic-E09000001-City-of-London/certificates.csv
