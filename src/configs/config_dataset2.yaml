@@ -1,32 +1,18 @@
-column_mapping:
-  property_type: house_type
-  postcode: postal_code
-aug_columns:
-  POSTCODE: postal_code
-  TOTAL_FLOOR_AREA: area_in_sqft
-  NUMBER_HABITABLE_ROOMS: no_bedrooms
-aug_dtype:
-  POSTCODE: string
-  TOTAL_FLOOR_AREA: integer
-  NUMBER_HABITABLE_ROOMS: integer
-required_columns:
-  - area_in_sqft
-  - no_bedrooms
-  - house_type
-  - location
-  - price
 cleaning:
-  drop_na: true
-  house_type_lower: true
-  filter_county: true
-  handle_skew: true
-  convert_to_sqft_from: m
-  missing_columns:
+  postcode_col: postcode
+  required_cols:
+    - price
+    - date
+    - postcode
+    - county
+    - property_type
+    - old/new
+  col_headers:
     - transaction_id
     - price
     - date
-    - postal_code
-    - house_type
+    - postcode
+    - property_type
     - old/new
     - duration
     - paon
@@ -38,17 +24,42 @@ cleaning:
     - county
     - ppdcategory_type
     - record_status
+  dtype_map:
+    price: float
+    date: datetime
+    postcode: string
+    county: string
+    property_type: string
+    old/new: string
+  clip_price: true
+  clip_quantile: 0.99
+
+augment_dataset:
+  postcode_col: POSTCODE
+  floor_col: TOTAL_FLOOR_AREA
+  required_cols:
+    - POSTCODE
+    - TOTAL_FLOOR_AREA
+  dtype_map:
+    TOTAL_FLOOR_AREA: int
+  col_headers:
+    - LMK_KEY
+    - POSTCODE
+    - TOTAL_FLOOR_AREA
+    - NUMBER_HABITABLE_ROOMS
+
+train:
+  numeric_features:
+    - price
+    - date
+  cat_features:
+    - property_type
+    - old/new
+    - district
+
 feature_engineering:  
-  map_postcode_to_district: true
-  house_type:
-    flat / apartment:
-      - studio
-    house:
-      - bungalow
-      - duplex
-      - mews  
-    new development: 
-      - penthouse
-  location:
-    larger_or_equal_to: 10
-  file_name: domestic-E09000001-City-of-London/certificates.csv
+  use_district: true
+  city_filter:
+    city_col: county 
+    filter_keywords:
+      - london
