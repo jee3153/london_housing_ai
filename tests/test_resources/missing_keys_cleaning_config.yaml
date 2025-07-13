@@ -1,0 +1,9 @@
+cleaning:
+  postcode_col:
+  clip_price:
+  dtype_map:
+    col1: type1
+    col2: type2
+  required_cols:
+    - col1
+    - col2

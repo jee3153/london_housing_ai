@@ -1,0 +1,4 @@
+[project]
+name = "ai_platform"
+version = "0.1.0"
+packages = ["src"]

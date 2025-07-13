@@ -1,0 +1,4 @@
+augment_dataset:
+  postcode_col: POSTCODE
+  dtype_map:
+    TOTAL_FLOOR_AREA: int 

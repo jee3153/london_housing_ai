@@ -32,7 +32,8 @@ mlflow server \
 ```
 
 ## Setup: docker compose
-1. compose up all components
+1. compose up all components.
+Change the args of train service in `./compose.yaml` to reflect your own dataset and configuration yaml file.
 ```bash
 docker compose build
 ```

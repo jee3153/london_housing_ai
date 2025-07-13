@@ -1,0 +1,19 @@
+cleaning:
+  postcode_col: postcodes
+  required_cols:
+    - col1
+    - col2
+  dtype_map:
+    col1: float
+    col2: datetime
+  clip_price: true
+  clip_quantile: 0.5
+  col_headers:
+    - price
+    - date    
+augment_dataset:
+  postcode_col: POSTCODE
+  required_cols:
+    - TOTAL_FLOOR_AREA
+  dtype_map:
+    TOTAL_FLOOR_AREA: int  
