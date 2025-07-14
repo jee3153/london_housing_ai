@@ -19,7 +19,6 @@ def clean_dataset(df: DataFrame, cfg: CleaningConfig) -> DataFrame:
     df = drop_na(df, subset=cfg.required_cols)
     if cfg.clip_price:
         df["price"] = clip_upper_bound(df["price"], cfg.clip_quantile)
-    
     return df
 
 
@@ -42,3 +41,8 @@ def build_aug_dataset(df: DataFrame, cfg: AugmentConfig) -> DataFrame:
 
 def df_with_required_cols(df: DataFrame, train_cfg: TrainConfig) -> DataFrame:
     return df[train_cfg.cat_features + train_cfg.numeric_features]
+
+
+def add_sold_year_column(df: DataFrame, timestamp_col: str) -> DataFrame:
+    df["sold_year"] = df[timestamp_col].dt.year.astype("Int64")
+    return df

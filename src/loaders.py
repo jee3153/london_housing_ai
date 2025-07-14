@@ -5,6 +5,7 @@ import yaml
 from config_schemas.CleaningConfig import CleaningConfig
 from config_schemas.AugmentConfig import AugmentConfig
 from config_schemas.TrainConfig import TrainConfig
+from config_schemas.ParquetConfig import ParquetConfig
 from config_schemas.FeatureConfig import FeatureConfig, CityFilter
 from pathlib import Path
 
@@ -80,6 +81,21 @@ def load_fe_config(path: Path) -> FeatureConfig:
         return FeatureConfig(**config_args)
     except Exception as e:
         raise KeyError(f"feature configuration field missing. {e}")    
+
+
+def load_parquet_config(path: Path) -> ParquetConfig:
+    raw_config = _load_config(path)
+    try:
+        raw_config = raw_config["parquet"]
+    except Exception as e:
+        raise KeyError(f"parquet config is not configured properly. reason - {e}")    
+    
+    config_args = {k: v for k, v in raw_config.items() if v is not None}
+
+    try:
+        return ParquetConfig(**config_args)
+    except Exception as e:
+        raise KeyError(f"parquet configuration field missing. {e}") 
 
 
 def _load_config(path: Path) -> Dict[Any, Any]:
