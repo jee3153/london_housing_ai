@@ -15,18 +15,22 @@ def get_engine() -> Engine:
     return create_engine(f"postgresql://postgres:password@{host}:5432/{db_name}")
 
 
-def persist_dataset(df: pd.DataFrame, engine: Engine, table_name: str | None=None):
+def persist_dataset(df: pd.DataFrame, engine: Engine, table_name: str | None = None):
     if table_name == None:
-        table_name = _get_table_name_from_date(datetime.date.fromtimestamp(time.time()).isoformat())
+        table_name = _get_table_name_from_date(
+            datetime.date.fromtimestamp(time.time()).isoformat()
+        )
     try:
         df.to_sql(table_name, engine, index=False)
     except Exception as e:
         raise RuntimeError(f"failed to persist table {table_name} to db.")
 
 
-def get_dataset_from_db(engine, table_name: str | None=None) -> pd.DataFrame:
+def get_dataset_from_db(engine, table_name: str | None = None) -> pd.DataFrame:
     if table_name == None:
-        table_name = _get_table_name_from_date(datetime.date.fromtimestamp(time.time()).isoformat())
+        table_name = _get_table_name_from_date(
+            datetime.date.fromtimestamp(time.time()).isoformat()
+        )
     return pd.read_sql_query(f"SELECT * FROM {table_name}", engine)
 
 
@@ -51,12 +55,14 @@ def dataset_already_persisted(engine: Engine, checksum: str) -> bool:
     sql = "SELECT 1 FROM dataset_hashes WHERE hash = :h LIMIT 1"
     with engine.begin() as conn:
         return conn.execute(text(sql), {"h": checksum}).first() is not None
-    
+
 
 def record_checksum(
-        engine: Engine, 
-        checksum: str, 
-        table_name: str = _get_table_name_from_date(datetime.date.fromtimestamp(time.time()).isoformat())
+    engine: Engine,
+    checksum: str,
+    table_name: str = _get_table_name_from_date(
+        datetime.date.fromtimestamp(time.time()).isoformat()
+    ),
 ) -> None:
     sql = """
         INSERT INTO dataset_hashes(hash, table_name)
@@ -64,7 +70,8 @@ def record_checksum(
         ON CONFLICT (hash) DO NOTHING
     """
     with engine.begin() as conn:
-        conn.execute(text(sql), {"h":checksum, "t": table_name})
+        conn.execute(text(sql), {"h": checksum, "t": table_name})
+
 
 def write_in_chunks(csv_path: Path, out_dir: Path, partition_cols: List[str]):
     out_dir = Path(out_dir)
@@ -75,19 +82,17 @@ def write_in_chunks(csv_path: Path, out_dir: Path, partition_cols: List[str]):
         table = pa.Table.from_pandas(chunk)
         if parquet_writer is None:
             parquet_writer = pq.ParquetWriter(
-                where=out_dir / "tmp.parquet",
-                schema=table.schema,
-                compression="snappy"
+                where=out_dir / "tmp.parquet", schema=table.schema, compression="snappy"
             )
         parquet_writer.write_table(table)
-    if parquet_writer is not None:    
-        parquet_writer.close()    
+    if parquet_writer is not None:
+        parquet_writer.close()
 
-    # repartition into year folders 
+    # repartition into year folders
     pq.write_to_dataset(
         table=pq.read_table(out_dir / "tmp.parquet"),
         root_path=str(out_dir),
-        partition_cols=partition_cols
-    )    
+        partition_cols=partition_cols,
+    )
 
     (out_dir / "tmp.parquet").unlink()

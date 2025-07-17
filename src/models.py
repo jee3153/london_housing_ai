@@ -8,6 +8,7 @@ from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.metrics import root_mean_squared_error
 from config_schemas.TrainConfig import TrainConfig
 
+
 class PriceModel:
     def __init__(self, cfg: TrainConfig):
         self.cfg = cfg
@@ -42,7 +43,9 @@ class PriceModel:
         train, test = self._train_test_split(df)
 
         X_train = train.drop(columns="price")
-        y_train = train["price"].clip(upper=train["price"].quantile(self.cfg.clip_target_q))
+        y_train = train["price"].clip(
+            upper=train["price"].quantile(self.cfg.clip_target_q)
+        )
 
         if self.cfg.log_target:
             y_train = np.log1p(y_train)

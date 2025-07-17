@@ -2,6 +2,7 @@ from src.augmenters import add_floor_area
 from pandas import DataFrame
 from pandas.testing import assert_frame_equal
 
+
 def test_add_floor_area():
     price_col = {"price": [1, 2, 3]}
     postcode_col = {"postcode_clean": ["ABC", "DEF", "GHI"]}
