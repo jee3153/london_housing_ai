@@ -5,8 +5,6 @@ import pandas as pd
 import datetime
 import time
 import re
-import pyarrow as pa, pyarrow.parquet as pq
-from pathlib import Path
 
 
 def get_engine() -> Engine:
@@ -71,28 +69,3 @@ def record_checksum(
     """
     with engine.begin() as conn:
         conn.execute(text(sql), {"h": checksum, "t": table_name})
-
-
-def write_in_chunks(csv_path: Path, out_dir: Path, partition_cols: List[str]):
-    out_dir = Path(out_dir)
-    out_dir.mkdir(parents=True, exist_ok=True)
-
-    parquet_writer = None
-    for chunk in pd.read_csv(csv_path, chunksize=1_000_000):
-        table = pa.Table.from_pandas(chunk)
-        if parquet_writer is None:
-            parquet_writer = pq.ParquetWriter(
-                where=out_dir / "tmp.parquet", schema=table.schema, compression="snappy"
-            )
-        parquet_writer.write_table(table)
-    if parquet_writer is not None:
-        parquet_writer.close()
-
-    # repartition into year folders
-    pq.write_to_dataset(
-        table=pq.read_table(out_dir / "tmp.parquet"),
-        root_path=str(out_dir),
-        partition_cols=partition_cols,
-    )
-
-    (out_dir / "tmp.parquet").unlink()

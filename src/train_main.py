@@ -1,5 +1,7 @@
 import mlflow
 import argparse
+import asyncio
+
 from argparse import Namespace
 from pathlib import Path
 from loaders import (
@@ -25,13 +27,18 @@ from persistence import (
     ensure_checksum_table,
     dataset_already_persisted,
     record_checksum,
-    write_in_chunks,
 )
+from file_injest import write_csv_to_partitioned_parquet
 from utils.checksum import file_sha256
-import asyncio
 
 
 def main(args: Namespace) -> None:
+
+    if not args.config or not args.csv:
+        raise ValueError(
+            f"Argument value for config and csv are required. config='{args.config}', csv='{args.csv}'"
+        )
+
     mlflow.set_tracking_uri("http://mlflow:5000")
     print("Current tracking URI is:", mlflow.get_tracking_uri())
 
@@ -49,8 +56,10 @@ def main(args: Namespace) -> None:
     # silver layer check-point
     parquet_config = load_parquet_config(config_path)
     df = add_sold_year_column(df, parquet_config.sold_timestamp_col)
-    write_in_chunks(
-        csv_path, data_path / "silver", parquet_config.silver_partition_cols
+    write_csv_to_partitioned_parquet(
+        csv_path=csv_path,
+        out_dir=data_path / "silver",
+        partition_cols=parquet_config.silver_partition_cols,
     )
 
     df = asyncio.run(
