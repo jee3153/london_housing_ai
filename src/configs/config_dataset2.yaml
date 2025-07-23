@@ -67,4 +67,5 @@ feature_engineering:
 parquet:
   sold_timestamp_col: date
   silver_partition_cols: 
-    - sold_by
+    - sold_year
+

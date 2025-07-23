@@ -2,11 +2,11 @@ from typing import List, Dict, Any
 import pandas as pd
 from pandas import DataFrame
 import yaml
-from config_schemas.CleaningConfig import CleaningConfig
-from config_schemas.AugmentConfig import AugmentConfig
-from config_schemas.TrainConfig import TrainConfig
-from config_schemas.ParquetConfig import ParquetConfig
-from config_schemas.FeatureConfig import FeatureConfig, CityFilter
+from src.config_schemas.CleaningConfig import CleaningConfig
+from src.config_schemas.AugmentConfig import AugmentConfig
+from src.config_schemas.TrainConfig import TrainConfig
+from src.config_schemas.ParquetConfig import ParquetConfig
+from src.config_schemas.FeatureConfig import FeatureConfig, CityFilter
 from pathlib import Path
 
 

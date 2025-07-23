@@ -3,3 +3,5 @@ train:
     - property_type
     - old/new
     - district
+  numeric_features:
+    - price  

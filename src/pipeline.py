@@ -1,11 +1,10 @@
-from typing import List
 from pandas import DataFrame
-from cleaners import normalise_postcodes, numeric_cast, clip_upper_bound, drop_na
-from feature_engineering import get_district_from_postcode, filter_by_keywords
-from config_schemas.CleaningConfig import CleaningConfig
-from config_schemas.AugmentConfig import AugmentConfig
-from config_schemas.FeatureConfig import FeatureConfig
-from config_schemas.TrainConfig import TrainConfig
+from src.cleaners import normalise_postcodes, numeric_cast, clip_upper_bound, drop_na
+from src.feature_engineering import get_district_from_postcode, filter_by_keywords
+from src.config_schemas.CleaningConfig import CleaningConfig
+from src.config_schemas.AugmentConfig import AugmentConfig
+from src.config_schemas.FeatureConfig import FeatureConfig
+from src.config_schemas.TrainConfig import TrainConfig
 
 
 def clean_dataset(df: DataFrame, cfg: CleaningConfig) -> DataFrame:
@@ -41,5 +40,5 @@ def df_with_required_cols(df: DataFrame, train_cfg: TrainConfig) -> DataFrame:
 
 
 def add_sold_year_column(df: DataFrame, timestamp_col: str) -> DataFrame:
-    df["sold_year"] = df[timestamp_col].dt.year.astype("Int64")
+    df["sold_year"] = df[timestamp_col].dt.year.astype("int64")
     return df

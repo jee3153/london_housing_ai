@@ -82,17 +82,17 @@ def test_load_cleaning_config():
 
 
 def test_load_invalid_cleaning_config():
-    path = _get_dir_path()
+    path = _get_dir_path() / "test_resources/invalid_test_config.yaml"
     with pytest.raises(
         KeyError, match=r"cleaning config is not configured properly. reason - .*"
     ):
-        load_cleaning_config(path / "test_resources/invalid_test_config.yaml")
+        load_cleaning_config(path)
 
 
 def test_load_missing_field_cleaning_config():
-    path = _get_dir_path()
+    path = _get_dir_path() / "test_resources/missing_keys_cleaning_config.yaml"
     with pytest.raises(KeyError, match=r"cleaning configuration field missing. .*"):
-        load_cleaning_config(path / "test_resources/missing_keys_cleaning_config.yaml")
+        load_cleaning_config(path)
 
 
 def test_load_invalid_augment_config():
@@ -108,8 +108,8 @@ def test_load_missing_field_augment_config():
 
 
 def test_load_train_config():
-    path = _get_dir_path()
-    config = load_train_config(path / "test_resources/test_train_config.yaml")
+    path = _get_dir_path() / "test_resources/test_train_config.yaml"
+    config = load_train_config(path)
     assert config != None
     assert config.cat_features == ["property_type", "old/new", "district"]
     assert config.log_target == True
@@ -122,12 +122,10 @@ def test_load_train_config():
     assert config.early_stop == 200
 
 
-"""
-write data as csv as a file name in current dir
-"""
-
-
 def _save_csv_file(file_path: Path, data_to_save: List[List[Any]]):
+    """
+    write data as csv as a file name in current dir
+    """
     with open(file_path, mode="w", newline="", encoding="utf-8") as file:
         # create csv write object
         writer = csv.writer(file)
@@ -135,10 +133,8 @@ def _save_csv_file(file_path: Path, data_to_save: List[List[Any]]):
         writer.writerows(data_to_save)
 
 
-"""
-get current directory path
-"""
-
-
 def _get_dir_path() -> Path:
+    """
+    get current directory path
+    """
     return Path(__file__).resolve().parent
