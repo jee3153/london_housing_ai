@@ -1,5 +1,8 @@
 .venv/
 mlruns
 __pycache__/
-catboost_info
+catboost_info/
 .vscode
+.env
+src/data_lake
+abiding-sunset-333516-4d51fad53404.json

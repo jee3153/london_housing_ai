@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Engine, text
+from sqlalchemy import create_engine, Engine, text, inspect
 from typing import List
 import os
 import pandas as pd
@@ -69,3 +69,8 @@ def record_checksum(
     """
     with engine.begin() as conn:
         conn.execute(text(sql), {"h": checksum, "t": table_name})
+
+
+def table_exists(engine: Engine, table_name: str) -> bool:
+    inspector = inspect(engine)
+    return inspector.has_table(table_name)

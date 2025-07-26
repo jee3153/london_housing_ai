@@ -1,5 +1,5 @@
 import pandas as pd
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 import numpy as np
 from numpy import ndarray
 import requests
@@ -10,7 +10,10 @@ POSTCODE_URL = "https://api.postcodes.io/postcodes"
 MAX_PER_REQ = 100
 MAX_CONCURRENCY = 10
 RATE_SLEEP = 0.12
+MAX_RETRIES = 3
+BACKOFF_FACTOR = 2
 
+# create concurrent async coroutine
 _sem = asyncio.Semaphore(MAX_CONCURRENCY)
 
 
@@ -20,61 +23,116 @@ async def get_district_from_postcode(
     district_col: str,
     batch_size: int = MAX_PER_REQ,
 ) -> pd.DataFrame:
-    unique_postcodes = df[postcode_col].unique()
+    unique_postcodes = df[postcode_col].dropna().unique().tolist()
     failed, mapping = [], {}
 
     async with aiohttp.ClientSession(
         headers={"User-Agent": "LondonHousing/0.1"}
     ) as session:
         # returns List[Dict[poscode, district]] and each item is coroutine
-        tasks = [
-            _fetch_district_async(
-                session, unique_postcodes[i : i + batch_size].tolist(), failed
-            )
-            for i in range(0, len(unique_postcodes), batch_size)
-        ]
+        postcode_to_district_map, failed = await _fetch_districts_with_retries(
+            session, unique_postcodes, batch_size
+        )
 
-        # launch in waves of 10 coroutines
-        for i in range(0, len(tasks), MAX_CONCURRENCY):
-            wave = tasks[i : i + MAX_CONCURRENCY]
-            for res in await asyncio.gather(*wave):
-                mapping.update(res)
-            await asyncio.sleep(RATE_SLEEP)
-
-    df = df.loc[~df[postcode_col].isin(failed), :]
-    df.loc[:, district_col] = df[postcode_col].map(mapping)
+    # keep only rows with postcode is not in failed list
+    df = df.loc[~df[postcode_col].isin(failed), :].copy()
+    df.loc[:, district_col] = df[postcode_col].map(postcode_to_district_map)
     print(f"getting district from postcodes is complete. failed queries: {failed}")
     return df
 
 
-"""
-Fetch admin_district for up to 100 postcodes per single API call.
-"""
+def _chunk(chunkable: List[str], n: int) -> List[List[str]]:
+    return [chunkable[i : i + n] for i in range(0, len(chunkable), n)]
 
 
-async def _fetch_district_async(
+async def _bulk_lookup(
+    session: aiohttp.ClientSession, postcodes: List[str]
+) -> Optional[List[dict]]:
+    """
+    A *single* hit to the bulk‑lookup endpoint.
+    Returns the parsed JSON on success, or None on transport/HTTP errors.
+    """
+    body = {"postcodes": postcodes}
+
+    async with _sem:
+        try:
+            async with async_timeout.timeout(30):
+                res = await session.post(POSTCODE_URL, json=body)
+
+            if res.status == 429:
+                return
+
+            res.raise_for_status()
+            return (await res.json())["result"]
+
+        except (aiohttp.ClientError, asyncio.TimeoutError):
+            return
+
+
+async def _fetch_districts_with_retries(
     session: aiohttp.ClientSession,
     postcodes: List[str],
-    failed: List[str],
-) -> Dict[str, str]:
-    body = {"postcodes": postcodes}
-    async with _sem:
-        async with async_timeout.timeout(15):
-            res = await session.post(POSTCODE_URL, json=body)
-            if res.status == 429:
-                await asyncio.sleep(2)  # sleep for 2 sec
-                res = await session.post(POSTCODE_URL, json=body)
-            res.raise_for_status()
-            data = (await res.json())["result"]
+    batch_size: int = MAX_PER_REQ,
+    concurrency: int = MAX_CONCURRENCY,
+    max_retries: int = MAX_RETRIES,
+    backoff_factor: int = BACKOFF_FACTOR,
+    rate_sleep: float = RATE_SLEEP,
+) -> tuple[Dict[str, str], List[str]]:
+    """
+    Resolves every postcode independently:
 
-    out = {}
-    for row in data:
-        postcode = row["query"]
-        district_per_postcode = row.get("result")
-        if not district_per_postcode or "admin_district" not in district_per_postcode:
-            failed.append(postcode)
+    • Makes batched calls for efficiency.
+    • On each pass, only the *still‑unresolved* codes are retried.
+    • Stops after `max_retries` attempts for each individual code.
+
+    Returns (resolved_mapping, failed_list).
+    """
+    todo = {pc.upper() for pc in postcodes}
+    done: Dict[str, str] = {}
+
+    for attempt in range(max_retries):
+        if not todo:
+            break
+
+        resolved = await _one_round(session, list(todo), batch_size)
+        done.update(resolved)
+        todo.difference_update(done.keys())
+        print(f"[attempt {attempt}] todo={len(todo)} resolved={len(done)}")
+
+        # back-off only if there is still work to do
+        if todo:
+            await asyncio.sleep(backoff_factor * (2**attempt))
+
+    return done, sorted(todo)
+
+
+async def _one_round(
+    session: aiohttp.ClientSession, todo: List[str], batch_size: int
+) -> Dict[str, str]:
+    chunks = _chunk(todo, batch_size)
+    print(f"wave: {len(chunks)} chunks of <=100")
+
+    tasks = []
+    async with asyncio.TaskGroup() as task_group:
+        for c in chunks:
+            tasks.append(task_group.create_task(_bulk_lookup(session, c)))
+
+    # all tasks finished here
+    out: Dict[str, str] = {}
+    for t in tasks:
+        data = t.result()  # None if that whole chunk failed
+        if not data:
             continue
-        out[postcode] = district_per_postcode["admin_district"]
+        for row in data:
+            pc = row["query"]
+
+            result = row.get("result")
+            if result is None:
+                continue
+
+            district = result.get("admin_district")
+            if district:
+                out[pc] = district
     return out
 
 
@@ -85,12 +143,10 @@ def merge_categories(df: pd.DataFrame, merge_map: Dict[str, List[str]]) -> pd.Da
     return updated_df
 
 
-"""
-    Filters values of column that are >= configured count
-"""
-
-
 def drop_niche_categories(df: pd.DataFrame, col_name: str, count: int) -> pd.DataFrame:
+    """
+    Filters values of column that are >= configured count
+    """
     return df[df[col_name].map(df[col_name].value_counts()) >= count]
 
 
@@ -100,68 +156,3 @@ def filter_by_keywords(
     for keyword in keywords:
         mask = df[col_name].str.contains(keyword, case=False, na=False)
     return df[mask]
-
-
-"""
-Fill in locations based on postcode, to get consistent categories for locations
-"""
-
-
-def map_postcodes_to_locations(
-    df: pd.DataFrame, postcode_col: str, new_column_name: str
-) -> pd.DataFrame:
-    unique_postcodes = df[postcode_col].unique()
-    batch_size = 100
-    failed_queries = []
-    postcode_location_map = {}
-
-    for i in range(0, len(unique_postcodes), batch_size):
-        batch = unique_postcodes[i : i + batch_size]
-        postcode_location_map.update(_fetch_district(batch, failed_queries))
-
-    _handle_failed_postcodes(df, failed_queries, postcode_col)
-    df.loc[:, new_column_name] = df.loc[:, postcode_col].map(postcode_location_map)
-    return df
-
-
-def _handle_failed_postcodes(
-    df: pd.DataFrame, failed_queries: List[str], postcode_col: str
-) -> pd.DataFrame:
-    return df.loc[~df[postcode_col].isin(failed_queries), :]
-
-
-def _fetch_district(postcodes: ndarray, failed_queries: List[str]) -> Dict[Any, Any]:
-    url = "https://api.postcodes.io/postcodes"
-    headers = {"Content-Type": "application/json"}
-    payload = {"postcodes": list(postcodes)}
-    try:
-        response = requests.post(url, json=payload, headers=headers, timeout=10)
-
-        # back-off & retry once
-        if response.status_code == 429:
-            time.sleep(2)
-            response = requests.post(url, json=payload, headers=headers, timeout=10)
-
-        response.raise_for_status()
-        data = response.json()["result"]
-        locations = {}
-        for result in data:
-            postcode = result["query"]
-            if "result" not in result:
-                continue
-
-            result_for_each = result["result"]
-            if not result_for_each:
-                print(f"query for {postcode} is not found.")
-                failed_queries.append(postcode)
-                continue
-
-            if "admin_district" not in result_for_each:
-                continue
-            locations[postcode] = result_for_each["admin_district"]
-
-        return locations
-
-    except requests.exceptions.RequestException as e:
-        print(f"Error fetching data: {e}")
-        return {postcode: np.nan for postcode in postcodes}

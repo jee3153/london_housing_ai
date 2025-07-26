@@ -9,10 +9,12 @@ This project addresses that pain by automating the data ingestion, cleaning, and
 
 ## Features
 - [x] Automated data loading and cleaning from CSV
-- [x] Persist cleaned data to database (SQLite)
+- [x] Persist cleaned data to database (Postgres)
 - [x] Feature engineering (postcode, house types, etc.)
 - [x] Model training and evaluation
 - [x] Experiment tracking with MLflow
+- [x] Write dataframe into parquet files classified by sold_year
+- [x] Store parque files to Google Cloud Storage
 - [ ] Model versioning/registry
 - [ ] Model serving (API)
 - [ ] Docker/Cloud deployment

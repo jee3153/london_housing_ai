@@ -1,10 +1,13 @@
 import mlflow
 import argparse
 import asyncio
+import datetime
+import time
+import re
 
 from argparse import Namespace
 from pathlib import Path
-from loaders import (
+from src.loaders import (
     load_dataset,
     load_cleaning_config,
     load_augment_config,
@@ -12,7 +15,7 @@ from loaders import (
     load_fe_config,
     load_parquet_config,
 )
-from pipeline import (
+from src.pipeline import (
     clean_dataset,
     feature_engineer_dataset,
     df_with_required_cols,
@@ -27,9 +30,15 @@ from persistence import (
     ensure_checksum_table,
     dataset_already_persisted,
     record_checksum,
+    _get_table_name_from_date,
+    table_exists,
 )
-from file_injest import write_csv_to_partitioned_parquet
+from file_injest import write_df_to_partitioned_parquet, upload_parquet_to_gcs
 from utils.checksum import file_sha256
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 
 def main(args: Namespace) -> None:
@@ -56,10 +65,18 @@ def main(args: Namespace) -> None:
     # silver layer check-point
     parquet_config = load_parquet_config(config_path)
     df = add_sold_year_column(df, parquet_config.sold_timestamp_col)
-    write_csv_to_partitioned_parquet(
-        csv_path=csv_path,
-        out_dir=data_path / "silver",
+    parquet_dir = data_path / "silver"
+
+    write_df_to_partitioned_parquet(
+        df=df,
+        out_dir=parquet_dir,
         partition_cols=parquet_config.silver_partition_cols,
+    )
+    upload_parquet_to_gcs(
+        local_dir=parquet_dir,
+        bucket_name=parquet_config.bucket_name,
+        destination_blob_name=parquet_config.destination_blob_name,
+        credential_path=os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"),
     )
 
     df = asyncio.run(
@@ -92,14 +109,19 @@ def main(args: Namespace) -> None:
     engine = get_engine()
     ensure_checksum_table(engine)
     checksum = file_sha256(csv_path)
+    table_name = _get_table_name_from_date(
+        datetime.date.fromtimestamp(time.time()).isoformat()
+    )
 
-    if not dataset_already_persisted(engine, checksum):
+    if not dataset_already_persisted(engine, checksum) or not table_exists(
+        engine, table_name
+    ):
         # persist clean/merged dataset
-        persist_dataset(df, engine)
-        record_checksum(engine, checksum)
+        persist_dataset(df, engine, table_name)
+        record_checksum(engine, checksum, table_name)
 
     # load dataset from db
-    df = get_dataset_from_db(engine)
+    df = get_dataset_from_db(engine, table_name)
 
     # model training
     with mlflow.start_run(run_name="catboost_baseline"):

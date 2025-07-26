@@ -68,4 +68,6 @@ parquet:
   sold_timestamp_col: date
   silver_partition_cols: 
     - sold_year
+  bucket_name: london-housing
+  destination_blob_name: by_sold_year
 
