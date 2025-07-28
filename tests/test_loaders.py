@@ -114,7 +114,8 @@ def test_load_train_config():
     assert config.cat_features == ["property_type", "old/new", "district"]
     assert config.log_target == True
     assert config.clip_target_q == 0.99
-    assert config.test_size == 0.2
+    assert config.test_size == 0.15
+    assert config.val_size == 0.15
     assert config.random_state == 42
     assert config.n_iter == 4000
     assert config.depth == 8

@@ -77,6 +77,7 @@ def main(args: Namespace) -> None:
         bucket_name=parquet_config.bucket_name,
         destination_blob_name=parquet_config.destination_blob_name,
         credential_path=os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"),
+        cleanup=args.cleanup_local,
     )
 
     df = asyncio.run(
@@ -127,7 +128,7 @@ def main(args: Namespace) -> None:
     with mlflow.start_run(run_name="catboost_baseline"):
         train_cfg = load_train_config(config_path)
         trainer = PriceModel(train_cfg)
-        trainer.fit(df_with_required_cols(df, train_cfg))
+        trainer.fit(df_with_required_cols(df, train_cfg), checksum)
 
 
 if __name__ == "__main__":
@@ -135,5 +136,6 @@ if __name__ == "__main__":
     parser.add_argument("--config", type=str)
     parser.add_argument("--csv", type=str)
     parser.add_argument("--aug", type=str)
+    parser.add_argument("--cleanup_local", action="store_true")
     args = parser.parse_args()
     main(args)

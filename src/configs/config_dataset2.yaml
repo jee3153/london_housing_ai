@@ -50,12 +50,13 @@ augment_dataset:
 
 train:
   numeric_features:
-    - price
     - date
   cat_features:
     - property_type
     - old/new
     - district
+  label:
+    price  
 
 feature_engineering:  
   use_district: true
