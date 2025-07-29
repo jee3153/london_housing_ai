@@ -45,11 +45,12 @@ def df_with_required_cols(df: DataFrame, train_cfg: TrainConfig) -> DataFrame:
     ]
     required_cols_set = set(required_cols)
     original_cols_set = set(copied_df.columns)
-    set(copied_df.columns).intersection_update(required_cols_set)
+    intersection = original_cols_set.intersection(required_cols)
 
-    if original_cols_set != required_cols_set:
-        original_cols_set.difference_update(required_cols_set)
-        raise KeyError(f"df column has missing columns: {required_cols}")
+    if intersection != required_cols_set:
+        raise KeyError(
+            f"df column has missing columns: {required_cols_set.difference(intersection)}"
+        )
     return df[required_cols]
 
 

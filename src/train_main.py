@@ -62,23 +62,24 @@ def main(args: Namespace) -> None:
     )
     df = clean_dataset(df, cleaning_config)
 
+    # ------comment it only when gcs uploading is required.
     # silver layer check-point
-    parquet_config = load_parquet_config(config_path)
-    df = add_sold_year_column(df, parquet_config.sold_timestamp_col)
-    parquet_dir = data_path / "silver"
+    # parquet_config = load_parquet_config(config_path)
+    # df = add_sold_year_column(df, parquet_config.sold_timestamp_col)
+    # parquet_dir = data_path / "silver"
 
-    write_df_to_partitioned_parquet(
-        df=df,
-        out_dir=parquet_dir,
-        partition_cols=parquet_config.silver_partition_cols,
-    )
-    upload_parquet_to_gcs(
-        local_dir=parquet_dir,
-        bucket_name=parquet_config.bucket_name,
-        destination_blob_name=parquet_config.destination_blob_name,
-        credential_path=os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"),
-        cleanup=args.cleanup_local,
-    )
+    # write_df_to_partitioned_parquet(
+    #     df=df,
+    #     out_dir=parquet_dir,
+    #     partition_cols=parquet_config.silver_partition_cols,
+    # )
+    # upload_parquet_to_gcs(
+    #     local_dir=parquet_dir,
+    #     bucket_name=parquet_config.bucket_name,
+    #     destination_blob_name=parquet_config.destination_blob_name,
+    #     credential_path=os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"),
+    #     cleanup=args.cleanup_local,
+    # )
 
     df = asyncio.run(
         feature_engineer_dataset(
