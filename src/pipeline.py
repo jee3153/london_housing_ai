@@ -37,7 +37,20 @@ def build_aug_dataset(df: DataFrame, cfg: AugmentConfig) -> DataFrame:
 
 
 def df_with_required_cols(df: DataFrame, train_cfg: TrainConfig) -> DataFrame:
-    return df[train_cfg.cat_features + train_cfg.numeric_features]
+    copied_df = df.copy()
+    required_cols = [
+        *train_cfg.cat_features,
+        *train_cfg.numeric_features,
+        train_cfg.label,
+    ]
+    required_cols_set = set(required_cols)
+    original_cols_set = set(copied_df.columns)
+    set(copied_df.columns).intersection_update(required_cols_set)
+
+    if original_cols_set != required_cols_set:
+        original_cols_set.difference_update(required_cols_set)
+        raise KeyError(f"df column has missing columns: {required_cols}")
+    return df[required_cols]
 
 
 def add_sold_year_column(df: DataFrame, timestamp_col: str) -> DataFrame:
