@@ -19,20 +19,6 @@ This project addresses that pain by automating the data ingestion, cleaning, and
 - [ ] Model serving (API)
 - [ ] Docker/Cloud deployment
 
-## Setup: Local machine
-1. Setup postgres
-```bash
-docker run -p 5432:5432 -e POSTGRES_PASSWORD=password -d mypostgres
-```
-
-2. Setup mlflow server
-```bash
-mlflow server \
-  --backend-store-uri postgresql://postgres:password@localhost:5432/mypostgres \
-  --default-artifact-root ./mlruns \
-  --host 0.0.0.0
-```
-
 ## Setup: docker compose
 1. compose up all components.
 Change the args of train service in `./compose.yaml` to reflect your own dataset and configuration yaml file.
@@ -49,6 +35,22 @@ docker compose run train
 3. up api service
 ```bash
 docker compose up api
+```
+
+## Setup: Local machine
+**Note:** It is recommended to use `docker-compose` for a simpler setup. See the `Setup: docker compose` section below. Use this when you need debugger.
+
+1. Setup postgres
+```bash
+docker run -p 5432:5432 --name some-postgres -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=password -e POSTGRES_DB=postgres -d postgres:16
+```
+
+2. Setup mlflow server
+```bash
+mlflow server \
+  --backend-store-uri postgresql://postgres:password@localhost:5432/postgres \
+  --default-artifact-root ./mlruns \
+  --host 0.0.0.0
 ```
 
 ## Troubleshoot tips
