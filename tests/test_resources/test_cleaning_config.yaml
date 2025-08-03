@@ -1,8 +1,14 @@
 cleaning:
   postcode_col: postcodes
+  loading_cols:
+    - col1
+    - col2
   required_cols:
     - col1
     - col2
+  rename_cols:
+    col1: col3
+    col2: col4  
   dtype_map:
     col1: float
     col2: datetime
