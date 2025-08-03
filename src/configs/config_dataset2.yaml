@@ -8,7 +8,6 @@ cleaning:
     - property_type
     - old/new
     - duration
-  # add cols to load and update load function to pass in cols_to_load instead of required_cols
   required_cols:
     - price
     - date
