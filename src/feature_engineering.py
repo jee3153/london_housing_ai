@@ -187,6 +187,15 @@ def extract_sold_month(df: pd.DataFrame, timestamp_col: str) -> pd.DataFrame:
 
 
 def extract_borough_price_trend(df: pd.DataFrame, extract_from: str) -> pd.DataFrame:
+    """extract price trend from median prices from each district.
+
+    Args:
+        df (pd.DataFrame): original data frame
+        extract_from (str): column name the data is extracted from
+
+    Returns:
+        pd.DataFrame: data frame which "bourouch_price_trend" column is added.
+    """
     district_medians = df.groupby(extract_from)["price"].median()
     df["borough_price_trend"] = df[extract_from].map(district_medians)
     return df

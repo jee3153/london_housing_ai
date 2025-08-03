@@ -74,8 +74,7 @@ train:
     - is_leasehold
     - district
     - sold_month
-  label:
-    price  
+  label: price  
 
 feature_engineering:  
   use_district: true
