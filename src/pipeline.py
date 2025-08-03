@@ -42,8 +42,6 @@ async def feature_engineer_dataset(
     if fe_cfg.use_district:
         df = await get_district_from_postcode(df, postcode_col, fe_cfg.district_col)
     df = extract_borough_price_trend(df, fe_cfg.timestamp_col)
-    print("After extraction")
-    print(df.head())
     # add versioning here
     return df
 
@@ -57,8 +55,6 @@ def build_aug_dataset(df: DataFrame, cfg: AugmentConfig) -> DataFrame:
 
 def df_with_required_cols(df: DataFrame, train_cfg: TrainConfig) -> DataFrame:
     copied_df = df.copy()
-    print("copied_df")
-    print(copied_df.head())
     required_cols = [
         *train_cfg.cat_features,
         *train_cfg.numeric_features,
