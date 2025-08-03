@@ -32,11 +32,11 @@ def load_cleaning_config(path: Path) -> CleaningConfig:
         raise KeyError(f"cleaning config is not configured properly. reason - {e}")
 
     size_dtype_map = len(raw_config["dtype_map"].items())
-    size_required_cols = len(raw_config["required_cols"])
+    size_loading_cols = len(raw_config["loading_cols"])
 
-    if size_dtype_map != size_required_cols:
+    if size_dtype_map != size_loading_cols:
         raise RuntimeError(
-            "size of dtype_map (={size_dtype_map}) should be the same as size of required_cols (={size_required_cols}) in config."
+            f"size of dtype_map (={size_dtype_map}) should be the same as size of required_cols (={size_loading_cols}) in config."
         )
 
     config_args = {k: v for k, v in raw_config.items() if v is not None}

@@ -1,12 +1,23 @@
 cleaning:
   postcode_col: postcode
-  required_cols:
+  loading_cols:
     - price
     - date
     - postcode
     - county
     - property_type
     - old/new
+    - duration
+  # add cols to load and update load function to pass in cols_to_load instead of required_cols
+  required_cols:
+    - price
+    - date
+    - postcode
+    - county
+    - property_type
+    - is_new_build
+    - is_leasehold
+    - borough_price_trend
   col_headers:
     - transaction_id
     - price
@@ -24,13 +35,17 @@ cleaning:
     - county
     - ppdcategory_type
     - record_status
+  rename_cols:
+    old/new: is_new_build
+    duration: is_leasehold  
   dtype_map:
     price: float
     date: datetime
     postcode: string
     county: string
     property_type: string
-    old/new: string
+    is_new_build: string
+    is_leasehold: string
   clip_price: true
   clip_quantile: 0.99
 
@@ -51,10 +66,14 @@ augment_dataset:
 train:
   numeric_features:
     - date
+    - sold_year
+    - borough_price_trend
   cat_features:
     - property_type
-    - old/new
+    - is_new_build
+    - is_leasehold
     - district
+    - sold_month
   label:
     price  
 
@@ -64,6 +83,7 @@ feature_engineering:
     city_col: county 
     filter_keywords:
       - london
+  timestamp_col: date    
 
 parquet:
   sold_timestamp_col: date
