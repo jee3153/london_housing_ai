@@ -7,3 +7,6 @@ cleaning:
   required_cols:
     - col1
     - col2
+  loading_cols:
+    - col1
+    - col2  

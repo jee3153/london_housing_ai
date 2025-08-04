@@ -11,6 +11,7 @@ class CityFilter:
 @dataclass(frozen=True)
 class FeatureConfig:
     use_district: bool = False
+    timestamp_col: str = "date"
     district_col: str = "district"
     drop_niche_threshold: int = 10
     city_filter: CityFilter | None = None

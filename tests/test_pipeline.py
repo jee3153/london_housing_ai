@@ -2,7 +2,7 @@ import pandas as pd
 import pytest
 from pandas.testing import assert_series_equal, assert_frame_equal
 from datetime import datetime, timezone
-from src.pipeline import add_sold_year_column, df_with_required_cols
+from src.pipeline import extract_sold_year, df_with_required_cols
 from src.config_schemas.TrainConfig import TrainConfig
 
 
@@ -18,7 +18,7 @@ def test_add_sold_year_column():
         }
     )
 
-    actual = add_sold_year_column(original_df, "timestamp")
+    actual = extract_sold_year(original_df, "timestamp")
     expected = pd.Series([2023, 2025, 2022], name="sold_year")
 
     assert_series_equal(actual["sold_year"], expected)

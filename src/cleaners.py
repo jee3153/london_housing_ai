@@ -38,3 +38,11 @@ def clip_upper_bound(series: Series, quantile_percentage: float) -> Series:
 
 def drop_na(df: DataFrame, subset: List[str] | None = None) -> DataFrame:
     return df.dropna(subset=subset)
+
+
+def rename_column(df: DataFrame, col_from: str, col_to: str) -> DataFrame:
+    try:
+        return df.rename(columns={col_from: col_to}, errors="raise").copy()
+    except KeyError as e:
+        print(f"Rename failed because {e}")
+        return df

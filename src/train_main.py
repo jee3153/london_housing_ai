@@ -19,7 +19,6 @@ from src.pipeline import (
     clean_dataset,
     feature_engineer_dataset,
     df_with_required_cols,
-    add_sold_year_column,
 )
 from augmenters import add_floor_area
 from models import PriceModel
@@ -56,74 +55,71 @@ def main(args: Namespace) -> None:
     csv_path = root_path / "data" / args.csv
     data_path = root_path / "data_lake"
 
-    cleaning_config = load_cleaning_config(config_path)
-    df = load_dataset(
-        csv_path, cleaning_config.col_headers, cleaning_config.required_cols
-    )
-    df = clean_dataset(df, cleaning_config)
-
-    # ------comment it only when gcs uploading is required.
-    # silver layer check-point
-    # parquet_config = load_parquet_config(config_path)
-    # df = add_sold_year_column(df, parquet_config.sold_timestamp_col)
-    # parquet_dir = data_path / "silver"
-
-    # write_df_to_partitioned_parquet(
-    #     df=df,
-    #     out_dir=parquet_dir,
-    #     partition_cols=parquet_config.silver_partition_cols,
-    # )
-    # upload_parquet_to_gcs(
-    #     local_dir=parquet_dir,
-    #     bucket_name=parquet_config.bucket_name,
-    #     destination_blob_name=parquet_config.destination_blob_name,
-    #     credential_path=os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"),
-    #     cleanup=args.cleanup_local,
-    # )
-
-    df = asyncio.run(
-        feature_engineer_dataset(
-            df, load_fe_config(config_path), cleaning_config.postcode_col
-        )
-    )
-    # merging with supplement dataset
-    if args.aug:
-        aug_config = load_augment_config(config_path)
-        if aug_config is None:
-            raise ValueError(
-                "Augment config could not be loaded. Please check your config file."
-            )
-        aug_csv_path = root_path / "data" / args.aug
-        aug_df = load_dataset(
-            aug_csv_path, aug_config.col_headers, aug_config.required_cols
-        )
-        df = add_floor_area(
-            main_df=df,
-            aug_df=aug_df,
-            floor_col=aug_config.floor_col,
-            merge_key=aug_config.postcode_col,
-            how=aug_config.join_method,
-            min_match_rate=aug_config.min_match_rate,
-        )
-
-    # gold layer check-point
-
     engine = get_engine()
     ensure_checksum_table(engine)
     checksum = file_sha256(csv_path)
     table_name = _get_table_name_from_date(
         datetime.date.fromtimestamp(time.time()).isoformat()
     )
+    # if dataset exists load dataset from db
+    if dataset_already_persisted(engine, checksum) or table_exists(engine, table_name):
+        df = get_dataset_from_db(engine, table_name)
+    else:
+        # if dataset not exist, proceed cleaning and data extraction
+        cleaning_config = load_cleaning_config(config_path)
+        df = load_dataset(
+            csv_path, cleaning_config.col_headers, cleaning_config.loading_cols
+        )
+        df = clean_dataset(df, cleaning_config)
 
-    if not dataset_already_persisted(engine, checksum) or not table_exists(
-        engine, table_name
-    ):
+        # ------comment it only when gcs uploading is required.
+        # silver layer check-point
+        # parquet_config = load_parquet_config(config_path)
+        # parquet_dir = data_path / "silver"
+
+        # write_df_to_partitioned_parquet(
+        #     df=df,
+        #     out_dir=parquet_dir,
+        #     partition_cols=parquet_config.silver_partition_cols,
+        # )
+        # upload_parquet_to_gcs(
+        #     local_dir=parquet_dir,
+        #     bucket_name=parquet_config.bucket_name,
+        #     destination_blob_name=parquet_config.destination_blob_name,
+        #     credential_path=os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"),
+        #     cleanup=args.cleanup_local,
+        # )
+
+        df = asyncio.run(
+            feature_engineer_dataset(
+                df, load_fe_config(config_path), cleaning_config.postcode_col
+            )
+        )
+        # merging with supplement dataset
+        if args.aug:
+            aug_config = load_augment_config(config_path)
+            if aug_config is None:
+                raise ValueError(
+                    "Augment config could not be loaded. Please check your config file."
+                )
+            aug_csv_path = root_path / "data" / args.aug
+            aug_df = load_dataset(
+                aug_csv_path, aug_config.col_headers, aug_config.required_cols
+            )
+            df = add_floor_area(
+                main_df=df,
+                aug_df=aug_df,
+                floor_col=aug_config.floor_col,
+                merge_key=aug_config.postcode_col,
+                how=aug_config.join_method,
+                min_match_rate=aug_config.min_match_rate,
+            )
+
+        # gold layer check-point
+
         # persist clean/merged dataset
         persist_dataset(df, engine, table_name)
         record_checksum(engine, checksum, table_name)
-
-    # load dataset from db
-    df = get_dataset_from_db(engine, table_name)
 
     # model training
     with mlflow.start_run(run_name="catboost_baseline"):

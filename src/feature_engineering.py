@@ -156,3 +156,46 @@ def filter_by_keywords(
     for keyword in keywords:
         mask = df[col_name].str.contains(keyword, case=False, na=False)
     return df[mask]
+
+
+def extract_sold_year(df: pd.DataFrame, timestamp_col: str) -> pd.DataFrame:
+    """Extract sold year data column out of given timestamp column
+
+    Args:
+        df (pd.DataFrame): original data frame
+        timestamp_col (str): timestamp column name
+
+    Returns:
+        pd.DataFrame: dataframe which sold_year column is added
+    """
+    df["sold_year"] = df[timestamp_col].dt.year.astype("int64")
+    return df
+
+
+def extract_sold_month(df: pd.DataFrame, timestamp_col: str) -> pd.DataFrame:
+    """Extract sold month data column out of given timestamp column
+
+    Args:
+        df (pd.DataFrame): original data frame
+        timestamp_col (str): timestamp column name
+
+    Returns:
+        pd.DataFrame: dataframe which sold_month column is added
+    """
+    df["sold_month"] = df[timestamp_col].dt.month.astype("int64")
+    return df
+
+
+def extract_borough_price_trend(df: pd.DataFrame, extract_from: str) -> pd.DataFrame:
+    """extract price trend from median prices from each district.
+
+    Args:
+        df (pd.DataFrame): original data frame
+        extract_from (str): column name the data is extracted from
+
+    Returns:
+        pd.DataFrame: data frame which "bourouch_price_trend" column is added.
+    """
+    district_medians = df.groupby(extract_from)["price"].median()
+    df["borough_price_trend"] = df[extract_from].map(district_medians)
+    return df
