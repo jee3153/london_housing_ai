@@ -5,6 +5,7 @@ import pandas as pd
 import datetime
 import time
 import re
+from psycopg2.errors import UndefinedTable
 
 
 def get_engine() -> Engine:
@@ -29,7 +30,14 @@ def get_dataset_from_db(engine, table_name: str | None = None) -> pd.DataFrame:
         table_name = _get_table_name_from_date(
             datetime.date.fromtimestamp(time.time()).isoformat()
         )
-    return pd.read_sql_query(f"SELECT * FROM {table_name}", engine)
+    try:
+        return pd.read_sql_query(f"SELECT * FROM {table_name}", engine)
+    except UndefinedTable as e:
+        raise ValueError(
+            f"table doesn't exist but dataset is already seen."
+            + "If you are ingesting the same csv again for development purpose,"
+            + "please remove your checksum record in 'dataset_hashes' table. Error: {e}"
+        )
 
 
 def _get_table_name_from_date(today_iso: str) -> str:
