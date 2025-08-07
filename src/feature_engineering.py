@@ -304,7 +304,10 @@ def extract_avg_price_last_6months(
 
     df_sorted_by_date[new_col] = (
         df_sorted_by_date.groupby(district_col, group_keys=False)
-        .apply(lambda group: _rolling_median(group, date_col))
+        .apply(
+            # need to exclude district column since it's group key
+            lambda group: _rolling_median(group.drop(columns=[district_col]), date_col)
+        )
         .reset_index(drop=True)
     )
 
@@ -312,4 +315,4 @@ def extract_avg_price_last_6months(
 
 
 def _rolling_median(group: pd.DataFrame, date_col: str) -> pd.Series:
-    return group.set_index(date_col)["price"].rolling("180D").median()
+    return group.set_index(date_col)["price"].rolling("180D", closed="left").median()
