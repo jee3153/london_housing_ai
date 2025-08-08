@@ -71,6 +71,7 @@ def main(args: Namespace) -> None:
         print(
             f"checksum '{checksum}' for '{csv_path}' is not found, proceeding cleaning and extraction."
         )
+
         # if dataset not exist, proceed cleaning and data extraction
         cleaning_config = load_cleaning_config(config_path)
         df = load_dataset(

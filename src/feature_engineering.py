@@ -195,6 +195,7 @@ def extract_borough_price_trend(
         pd.DataFrame: data frame which "bourouch_price_trend" column is added.
     """
     district_medians = df.groupby(extract_from)["price"].median()
+
     df[new_col] = df[extract_from].map(district_medians)
     return df
 
