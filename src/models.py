@@ -84,6 +84,14 @@ class PriceModel:
             eval_set=(X_val, y_val),
         )
 
+        # this presents which feature contribution rates
+        importances = self.model.get_feature_importance()
+        print(f"columns: {X_train.columns}")
+        importance_df = pd.DataFrame(
+            {"feature": X_train.columns, "importance": importances}
+        ).sort_values("importance", ascending=False)
+        print(f"==========importance========\n{importance_df}")
+
         # test set evaluation
         y_true, y_pred = self.predict(test)
         rmse = root_mean_squared_error(y_true, y_pred)

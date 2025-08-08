@@ -20,7 +20,6 @@ async def get_district_from_postcode(
     batch_size: int = MAX_PER_REQ,
 ) -> pd.DataFrame:
     unique_postcodes = df[postcode_col].dropna().unique().tolist()
-    failed, mapping = [], {}
 
     async with aiohttp.ClientSession(
         headers={"User-Agent": "LondonHousing/0.1"}
@@ -33,6 +32,7 @@ async def get_district_from_postcode(
     # keep only rows with postcode is not in failed list
     df = df.loc[~df[postcode_col].isin(failed), :].copy()
     df.loc[:, district_col] = df[postcode_col].map(postcode_to_district_map)
+
     print(f"getting district from postcodes is complete. failed queries: {failed}")
     return df
 
@@ -301,6 +301,8 @@ def extract_avg_price_last_6months(
         pd.DataFrame: data frame + column that calculated the last median
     """
     df_sorted_by_date = df.sort_values(date_col)
+    # median price grouped by district (e.g. {"camden": 400k, "hackney": 350k, ...})
+    district_medians = df.groupby("district")["price"].median()
 
     df_sorted_by_date[new_col] = (
         df_sorted_by_date.groupby(district_col, group_keys=False)
@@ -311,8 +313,13 @@ def extract_avg_price_last_6months(
         .reset_index(drop=True)
     )
 
+    df_sorted_by_date[new_col] = df_sorted_by_date[new_col].fillna(
+        # map district column -> median price of each district using Series which can be represented using key: value map
+        df_sorted_by_date["district"].map(district_medians)
+    )
     return df_sorted_by_date
 
 
 def _rolling_median(group: pd.DataFrame, date_col: str) -> pd.Series:
+    # if there is no data of the last 180 days for the current row, it will return NaN
     return group.set_index(date_col)["price"].rolling("180D", closed="left").median()
