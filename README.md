@@ -53,6 +53,12 @@ mlflow server \
   --host 0.0.0.0
 ```
 
+## Running test
+⚠️ Ensure to locate in root path before running:
+```bash
+pytest
+```
+
 ## Feature Extraction Workflow
 When you add a new column extracted from features follow this workflow.
 1. define extraction method which adds new column to data frame
