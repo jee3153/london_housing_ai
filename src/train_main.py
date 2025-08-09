@@ -63,8 +63,15 @@ def main(args: Namespace) -> None:
     )
     # if dataset exists load dataset from db
     if dataset_already_persisted(engine, checksum) or table_exists(engine, table_name):
+        print(
+            f"checksum '{checksum}' for '{csv_path}' is found, skipping cleaning and extraction."
+        )
         df = get_dataset_from_db(engine, table_name)
     else:
+        print(
+            f"checksum '{checksum}' for '{csv_path}' is not found, proceeding cleaning and extraction."
+        )
+
         # if dataset not exist, proceed cleaning and data extraction
         cleaning_config = load_cleaning_config(config_path)
         df = load_dataset(

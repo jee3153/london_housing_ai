@@ -6,7 +6,7 @@ COPY . /app
 
 ENV PYTHONPATH=/app
 
-RUN pip install --no-cache-dir -r src/requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 EXPOSE 8000
 

@@ -53,6 +53,17 @@ mlflow server \
   --host 0.0.0.0
 ```
 
+## Running test
+⚠️ Ensure to locate in root path before running:
+```bash
+pytest
+```
+
+## Feature Extraction Workflow
+When you add a new column extracted from features follow this workflow.
+1. define extraction method which adds new column to data frame
+2. add the new column to `cleaning.required_cols` and `train.cat_features` or `train.numeric_features` list to `ai_platform/src/configs/config_dataset2.yaml`
+
 ## Troubleshoot tips
 If you are having failure for second compose up,
 try deleting `/mlruns` directory, and run train again.

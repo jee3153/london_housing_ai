@@ -12,6 +12,8 @@ from src.feature_engineering import (
     extract_sold_year,
     extract_sold_month,
     extract_borough_price_trend,
+    extract_yearly_district_price_trend,
+    extract_avg_price_last_6months,
 )
 from src.config_schemas.CleaningConfig import CleaningConfig
 from src.config_schemas.AugmentConfig import AugmentConfig
@@ -36,12 +38,30 @@ def clean_dataset(df: DataFrame, cfg: CleaningConfig) -> DataFrame:
 async def feature_engineer_dataset(
     df: DataFrame, fe_cfg: FeatureConfig, postcode_col: str
 ) -> DataFrame:
+    # level 1 extractions
     if fe_cfg.city_filter:
         filter_cfg = fe_cfg.city_filter
         df = filter_by_keywords(df, filter_cfg.filter_keywords, filter_cfg.city_col)
     if fe_cfg.use_district:
         df = await get_district_from_postcode(df, postcode_col, fe_cfg.district_col)
-    df = extract_borough_price_trend(df, fe_cfg.timestamp_col)
+
+    # level 2 extractions
+    df = extract_borough_price_trend(
+        df=df, extract_from=fe_cfg.timestamp_col, new_col="borough_price_trend"
+    )
+    df = extract_yearly_district_price_trend(
+        df=df,
+        district_col="district",
+        years_col="sold_year",
+        new_col="district_yearly_medians",
+    )
+    df = extract_avg_price_last_6months(
+        df=df,
+        new_col="avg_price_last_half",
+        date_col=fe_cfg.timestamp_col,
+        district_col=fe_cfg.district_col,
+    )
+
     # add versioning here
     return df
 
