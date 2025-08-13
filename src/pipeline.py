@@ -64,12 +64,6 @@ async def feature_engineer_dataset(
     )
     df = extract_interaction_features(
         df=df,
-        combi_col_name="newbuild_type",
-        col1="is_new_build",
-        col2="property_type",
-    )
-    df = extract_interaction_features(
-        df=df,
         combi_col_name="advanced_property_type",
         col1="is_new_build",
         col2="property_type",
@@ -77,7 +71,7 @@ async def feature_engineer_dataset(
     df = extract_interaction_features(
         df=df,
         combi_col_name="property_type_and_tenure",
-        col1="is_new_build",
+        col1="is_leasehold",
         col2="property_type",
     )
     df = extract_interaction_features(

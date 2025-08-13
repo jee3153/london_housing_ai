@@ -74,7 +74,6 @@ train:
     - is_leasehold
     - district
     - sold_month
-    - newbuild_type
     - advanced_property_type
     - property_type_and_tenure
     - property_type_and_district
