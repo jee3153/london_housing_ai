@@ -324,3 +324,10 @@ def extract_avg_price_last_6months(
 def _rolling_median(group: pd.DataFrame, date_col: str) -> pd.Series:
     # if there is no data of the last 180 days for the current row, it will return NaN
     return group.set_index(date_col)["price"].rolling("180D", closed="left").median()
+
+
+def extract_interaction_features(
+    df: pd.DataFrame, combi_col_name: str, col1: str, col2: str, sep: str = "_"
+) -> pd.DataFrame:
+    df[combi_col_name] = df[col1].astype(str) + sep + df[col2].astype(str)
+    return df

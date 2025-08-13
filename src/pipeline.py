@@ -14,6 +14,7 @@ from src.feature_engineering import (
     extract_borough_price_trend,
     extract_yearly_district_price_trend,
     extract_avg_price_last_6months,
+    extract_interaction_features,
 )
 from src.config_schemas.CleaningConfig import CleaningConfig
 from src.config_schemas.AugmentConfig import AugmentConfig
@@ -61,7 +62,30 @@ async def feature_engineer_dataset(
         date_col=fe_cfg.timestamp_col,
         district_col=fe_cfg.district_col,
     )
-
+    df = extract_interaction_features(
+        df=df,
+        combi_col_name="newbuild_type",
+        col1="is_new_build",
+        col2="property_type",
+    )
+    df = extract_interaction_features(
+        df=df,
+        combi_col_name="advanced_property_type",
+        col1="is_new_build",
+        col2="property_type",
+    )
+    df = extract_interaction_features(
+        df=df,
+        combi_col_name="property_type_and_tenure",
+        col1="is_new_build",
+        col2="property_type",
+    )
+    df = extract_interaction_features(
+        df=df,
+        combi_col_name="property_type_and_district",
+        col1="district",
+        col2="property_type",
+    )
     # add versioning here
     return df
 

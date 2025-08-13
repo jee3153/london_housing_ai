@@ -16,9 +16,9 @@ cleaning:
     - property_type
     - is_new_build
     - is_leasehold
-    - borough_price_trend
-    - district_yearly_medians
-    - avg_price_last_half
+    # - borough_price_trend
+    # - district_yearly_medians
+    # - avg_price_last_half
   col_headers:
     - transaction_id
     - price
@@ -77,6 +77,10 @@ train:
     - is_leasehold
     - district
     - sold_month
+    - newbuild_type
+    - advanced_property_type
+    - property_type_and_tenure
+    - property_type_and_district
   label: price  
 
 feature_engineering:  
