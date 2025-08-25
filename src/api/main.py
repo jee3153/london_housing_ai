@@ -5,21 +5,27 @@ import pandas as pd
 import numpy as np
 from mlflow.tracking import MlflowClient
 
+# Initialize MLflow client
 client = MlflowClient(tracking_uri="http://mlflow:5000")
-runs = client.search_runs(
-    experiment_ids=["0"],
-    filter_string="attributes.status = 'FINISHED'",
-    order_by=["start_time DESC"],
-    max_results=1,
+
+# Get the latest model version of PriceModel (not yet staged)
+latest_versions = client.get_latest_versions("PriceModel", stages=["None"])
+if not latest_versions:
+    raise RuntimeError("No new model version found in registry. Train and log a model first.")
+
+# Promote the most recent version to Production
+latest_version = latest_versions[0].version
+client.transition_model_version_stage(
+    name="PriceModel",
+    version=latest_version,
+    stage="Production",
+    archive_existing_versions=True,
 )
 
-if not runs:
-    raise RuntimeError(
-        "No MLflow runs found! train and log a model before starting the API."
-    )
-run_id = runs[0].info.run_id
-# Load your MLflow model by run ID or local path
-model = mlflow.pyfunc.load_model(f"runs:/{run_id}/catboost_model")
+print(f"Promoted PriceModel version {latest_version} to Production.")
+
+# Always load the current Production model
+model = mlflow.pyfunc.load_model("models:/PriceModel/Production")
 
 app = FastAPI(title="London Housing Price Predictor")
 
@@ -36,4 +42,11 @@ class HousingData(BaseModel):
 def predict(data: HousingData):
     df = pd.DataFrame([data.model_dump()])
     preds = model.predict(df)
-    return {"predicted_price": round(np.expm1(preds[0]), 2)}
+    
+    # Handle log_target decoding if required (optional safeguard)
+    try:
+        predicted_price = float(np.expm1(preds[0]))
+    except Exception:
+        predicted_price = float(preds[0])
+    
+    return {"predicted_price": round(predicted_price, 2)}

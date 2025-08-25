@@ -16,3 +16,4 @@ class TrainConfig:
     depth: int = 8
     lr: float = 0.05
     early_stop: int = 200
+    model_name: str = 'PriceModel'
