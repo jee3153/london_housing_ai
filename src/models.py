@@ -1,5 +1,6 @@
 # models.py
 import mlflow
+import mlflow.catboost
 import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
@@ -102,6 +103,13 @@ class PriceModel:
         y_val_true, y_val_pred = self.predict(val)
         val_rmse = root_mean_squared_error(y_true, y_pred)
         mlflow.log_metric("val_rmse", val_rmse)
+
+        model_name = "PriceModel"
+        mlflow.catboost.log_model(
+            cb_model=self.model,
+            artifact_path="model",
+            registered_model_name=model_name,
+        )
 
     def predict(self, df: pd.DataFrame) -> Tuple[np.ndarray, np.ndarray]:
         X = df.drop(columns="price")

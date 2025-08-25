@@ -4,6 +4,7 @@ import asyncio
 import datetime
 import time
 import re
+import json
 
 from argparse import Namespace
 from pathlib import Path
@@ -131,6 +132,13 @@ def main(args: Namespace) -> None:
     # model training
     with mlflow.start_run(run_name="catboost_baseline"):
         train_cfg = load_train_config(config_path)
+        mlflow.set_tags(
+            {
+                "dataset_checksum": checksum,
+                "dataset_table": table_name,
+                "train_config": json.dumps(train_cfg.__dict__)
+            }
+        )
         trainer = PriceModel(train_cfg)
         trainer.fit(df_with_required_cols(df, train_cfg), checksum)
 

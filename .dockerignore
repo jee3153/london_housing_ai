@@ -1,0 +1,50 @@
+# Ignore Python cache and compiled files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pkl
+*.joblib
+
+# Jupyter notebooks checkpoints
+.ipynb_checkpoints/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+
+# Logs
+logs/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Docker and CI
+.dockerignore
+docker-compose.override.yml
+
+# Ignore test files and configs (optional)
+tests/
+test/
+*.test.py
+
+# Cache
+.cache/
+*.swp
+*.bak
+*.tmp
+*.temp
+
+# Ignore local config or secrets
+.env
+.env.*
+
