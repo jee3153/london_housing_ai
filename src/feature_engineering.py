@@ -1,6 +1,14 @@
 import pandas as pd
-from typing import Dict, List, Optional
+import numpy as np
+import re
+from typing import Dict, List, Optional, Any
 import asyncio, aiohttp, async_timeout, time
+import ray
+from ray.data.aggregate import AggregateFnV2
+from ray.data._internal.util import is_null
+from ray.data.block import Block, BlockAccessor, AggType, U
+import pyarrow.compute as pc
+from ray_setup import configure_ray_for_repro
 
 POSTCODE_URL = "https://api.postcodes.io/postcodes"
 MAX_PER_REQ = 100
@@ -11,15 +19,48 @@ BACKOFF_FACTOR = 2
 
 # create concurrent async coroutine
 _sem = asyncio.Semaphore(MAX_CONCURRENCY)
+configure_ray_for_repro()
+
+
+class Median(AggregateFnV2):
+    def __init__(
+        self,
+        on: Optional[str] = None,
+        ignore_nulls: bool = True,
+        alias_name: Optional[str] = None,
+    ):
+        super().__init__(
+            alias_name if alias_name else f"mean({str(on)})",
+            on=on,
+            ignore_nulls=ignore_nulls,
+            # NOTE: We've to copy returned list here, as some
+            #       aggregations might be modifying elements in-place
+            zero_factory=lambda: list([0, 0]),  # noqa: C410
+        )
+
+    def aggregate_block(self, block: Block) -> List:
+        accessor = BlockAccessor.for_block(block)
+        col = accessor.to_pandas()[self._target_col_name].dropna().tolist()
+        return col
+
+    def combine(self, current_accumulator: List, new: List) -> Any:
+        return list(current_accumulator) + list(new)
+
+    def finalize(self, accumulator: List[float]) -> float | None:
+        if not accumulator:
+            return None
+        return float(np.median(accumulator))
 
 
 async def get_district_from_postcode(
-    df: pd.DataFrame,
+    ds: ray.data.Dataset,
     postcode_col: str,
     district_col: str,
     batch_size: int = MAX_PER_REQ,
-) -> pd.DataFrame:
-    unique_postcodes = df[postcode_col].dropna().unique().tolist()
+) -> ray.data.Dataset:
+    unique_postcodes: List[str] = ds.filter(
+        lambda row: row[postcode_col] is not None
+    ).unique(column=postcode_col)
 
     async with aiohttp.ClientSession(
         headers={"User-Agent": "LondonHousing/0.1"}
@@ -30,11 +71,12 @@ async def get_district_from_postcode(
         )
 
     # keep only rows with postcode is not in failed list
-    df = df.loc[~df[postcode_col].isin(failed), :].copy()
-    df.loc[:, district_col] = df[postcode_col].map(postcode_to_district_map)
+    ds = ds.filter()
+    ds = ds.loc[~ds[postcode_col].isin(failed), :].copy()
+    ds.loc[:, district_col] = ds[postcode_col].map(postcode_to_district_map)
 
     print(f"getting district from postcodes is complete. failed queries: {failed}")
-    return df
+    return ds
 
 
 def _chunk(chunkable: List[str], n: int) -> List[List[str]]:
@@ -147,11 +189,23 @@ def drop_niche_categories(df: pd.DataFrame, col_name: str, count: int) -> pd.Dat
 
 
 def filter_by_keywords(
-    df: pd.DataFrame, keywords: List[str], col_name: str
-) -> pd.DataFrame:
-    for keyword in keywords:
-        mask = df[col_name].str.contains(keyword, case=False, na=False)
-    return df[mask]
+    ds: ray.data.Dataset, keywords: List[str], col_name: str
+) -> ray.data.Dataset:
+    parts = [re.escape(keyword) for keyword in keywords]
+    pattern = "|".join(parts)
+
+    def _filter_batch(pdf: pd.DataFrame) -> pd.DataFrame:
+        column_normalised = pdf[col_name].astype("string")
+        # create boolean masks on column
+        # 0 True
+        # 1 False
+        # 2 True
+        mask = column_normalised.str.contains(pattern, case=False, na=False)
+        # only keeps rows with True value on the mask
+        return pdf[mask]
+
+    # apply given function to all batches and return that as data frame.
+    return ds.map_batches(_filter_batch, batch_format="pandas")
 
 
 def extract_sold_year(df: pd.DataFrame, timestamp_col: str) -> pd.DataFrame:
@@ -183,21 +237,38 @@ def extract_sold_month(df: pd.DataFrame, timestamp_col: str) -> pd.DataFrame:
 
 
 def extract_borough_price_trend(
-    df: pd.DataFrame, extract_from: str, new_col: str
-) -> pd.DataFrame:
-    """extract price trend from median prices from each district.
+    ds: ray.data.Dataset, extract_from: str, new_col: str
+) -> ray.data.Dataset:
+    """
+    Add a column with median price values grouped by a reference column.
+
+    This computes the median of the "price" column for each unique value
+    in `extract_from` (e.g., timestamp, borough, or district), then maps
+    those medians back to the dataset as a new column.
 
     Args:
-        df (pd.DataFrame): original data frame
-        extract_from (str): column name the data is extracted from
+        ds (ray.data.Dataset): Input Ray dataset containing a "price" column.
+        extract_from (str): Column name to group by when computing medians.
+        new_col (str): Name of the new column to add with median price values.
 
     Returns:
-        pd.DataFrame: data frame which "bourouch_price_trend" column is added.
+        ray.data.Dataset: The dataset with an additional column where each
+        row contains the median "price" of all rows sharing the same
+        `extract_from` value.
     """
-    district_medians = df.groupby(extract_from)["price"].median()
+    district_medians = {
+        row[extract_from]: row["price_median"]
+        for row in ds.groupby(extract_from)
+        .aggregate(Median(on="price", alias_name="price_median"))
+        .take_all()
+    }
 
-    df[new_col] = df[extract_from].map(district_medians)
-    return df
+    ds.add_column(
+        col=new_col,
+        fn=lambda df: pd.DataFrame: df[extract_from].map(district_medians),
+        batch_format="pandas",
+    )
+    return ds
 
 
 def extract_yearly_district_price_trend(
@@ -215,7 +286,7 @@ def extract_yearly_district_price_trend(
         [..., "district", "year_sold", "price", "district_yearly_medians"]
         [..., "camden", 2006, 234k, 212k]
         [..., "camden", 2006, 190k, 212k]
-        [..., "camden", 2015, 334k, 284k]
+        [..., "camden", 201a5, 334k, 284k]
         [..., "camden", 2015, 300k, 284k]
 
     Args:

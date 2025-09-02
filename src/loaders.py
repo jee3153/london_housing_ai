@@ -7,22 +7,31 @@ from src.config_schemas.AugmentConfig import AugmentConfig
 from src.config_schemas.TrainConfig import TrainConfig
 from src.config_schemas.ParquetConfig import ParquetConfig
 from src.config_schemas.FeatureConfig import FeatureConfig, CityFilter
+from ray_setup import configure_ray_for_repro
 from pathlib import Path
+import ray
+
+
+ray.data.DatasetContext.get_current().execution_options.preserve_order = (
+    True  # deterministic
+)
+configure_ray_for_repro()
 
 
 def load_dataset(
-    path: Path, schema: List[str], columns_to_load: List[str]
-) -> DataFrame:
-    is_noheader = path.suffixes == [".noheader", ".csv"]
+    paths: List[str], schema: List[str], columns_to_load: List[str]
+) -> ray.data.Dataset:
+    is_noheader = all(Path(p).suffixes == [".noheader", ".csv"] for p in paths)
+
     try:
-        return pd.read_csv(
-            path,
+        return ray.data.read_csv(
+            paths,
             header=None if is_noheader else 0,
             names=schema,
             usecols=columns_to_load,
         )
-    except:
-        raise RuntimeError("schema and column header doesn't match.")
+    except Exception as e:
+        raise RuntimeError("schema and column header doesn't match.") from e
 
 
 def load_cleaning_config(path: Path) -> CleaningConfig:

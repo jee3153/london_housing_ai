@@ -34,10 +34,12 @@ from persistence import (
 )
 from file_injest import write_df_to_partitioned_parquet, upload_parquet_to_gcs
 from utils.checksum import file_sha256
+from ray_setup import configure_ray_for_repro
 from dotenv import load_dotenv
 import os
 
 load_dotenv()
+configure_ray_for_repro()
 
 
 def main(args: Namespace) -> None:
@@ -66,7 +68,7 @@ def main(args: Namespace) -> None:
         print(
             f"checksum '{checksum}' for '{csv_path}' is found, skipping cleaning and extraction."
         )
-        df = get_dataset_from_db(engine, table_name)
+        ds = get_dataset_from_db(engine, table_name)
     else:
         print(
             f"checksum '{checksum}' for '{csv_path}' is not found, proceeding cleaning and extraction."
@@ -74,10 +76,10 @@ def main(args: Namespace) -> None:
 
         # if dataset not exist, proceed cleaning and data extraction
         cleaning_config = load_cleaning_config(config_path)
-        df = load_dataset(
-            csv_path, cleaning_config.col_headers, cleaning_config.loading_cols
+        ds = load_dataset(
+            [str(csv_path)], cleaning_config.col_headers, cleaning_config.loading_cols
         )
-        df = clean_dataset(df, cleaning_config)
+        ds = clean_dataset(ds, cleaning_config)
 
         # ------comment it only when gcs uploading is required.
         # silver layer check-point
@@ -97,9 +99,9 @@ def main(args: Namespace) -> None:
         #     cleanup=args.cleanup_local,
         # )
 
-        df = asyncio.run(
+        ds = asyncio.run(
             feature_engineer_dataset(
-                df, load_fe_config(config_path), cleaning_config.postcode_col
+                ds, load_fe_config(config_path), cleaning_config.postcode_col
             )
         )
         # merging with supplement dataset
@@ -113,8 +115,8 @@ def main(args: Namespace) -> None:
             aug_df = load_dataset(
                 aug_csv_path, aug_config.col_headers, aug_config.required_cols
             )
-            df = add_floor_area(
-                main_df=df,
+            ds = add_floor_area(
+                main_df=ds,
                 aug_df=aug_df,
                 floor_col=aug_config.floor_col,
                 merge_key=aug_config.postcode_col,
@@ -125,14 +127,14 @@ def main(args: Namespace) -> None:
         # gold layer check-point
 
         # persist clean/merged dataset
-        persist_dataset(df, engine, table_name)
+        persist_dataset(ds, engine, table_name)
         record_checksum(engine, checksum, table_name)
 
     # model training
     with mlflow.start_run(run_name="catboost_baseline"):
         train_cfg = load_train_config(config_path)
         trainer = PriceModel(train_cfg)
-        trainer.fit(df_with_required_cols(df, train_cfg), checksum)
+        trainer.fit(df_with_required_cols(ds, train_cfg), checksum)
 
 
 if __name__ == "__main__":
