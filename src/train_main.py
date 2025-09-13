@@ -4,7 +4,6 @@ import asyncio
 import datetime
 import time
 import re
-
 from argparse import Namespace
 from pathlib import Path
 from src.loaders import (
@@ -18,7 +17,7 @@ from src.loaders import (
 from src.pipeline import (
     clean_dataset,
     feature_engineer_dataset,
-    df_with_required_cols,
+    ds_with_required_cols,
 )
 from augmenters import add_floor_area
 from models import PriceModel
@@ -116,11 +115,11 @@ def main(args: Namespace) -> None:
                 aug_csv_path, aug_config.col_headers, aug_config.required_cols
             )
             ds = add_floor_area(
-                main_df=ds,
-                aug_df=aug_df,
+                main_ds=ds,
+                aug_ds=aug_df,
                 floor_col=aug_config.floor_col,
                 merge_key=aug_config.postcode_col,
-                how=aug_config.join_method,
+                join_type=aug_config.join_type,
                 min_match_rate=aug_config.min_match_rate,
             )
 
@@ -134,7 +133,7 @@ def main(args: Namespace) -> None:
     with mlflow.start_run(run_name="catboost_baseline"):
         train_cfg = load_train_config(config_path)
         trainer = PriceModel(train_cfg)
-        trainer.fit(df_with_required_cols(ds, train_cfg), checksum)
+        trainer.fit(ds_with_required_cols(ds, train_cfg), checksum)
 
 
 if __name__ == "__main__":

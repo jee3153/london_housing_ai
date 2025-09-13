@@ -15,13 +15,15 @@ def get_engine() -> Engine:
     return create_engine(f"postgresql://postgres:password@{host}:5432/{db_name}")
 
 
-def persist_dataset(df: pd.DataFrame, engine: Engine, table_name: str | None = None):
+def persist_dataset(
+    ds: ray.data.Dataset, engine: Engine, table_name: str | None = None
+):
     if table_name == None:
         table_name = _get_table_name_from_date(
             datetime.date.fromtimestamp(time.time()).isoformat()
         )
     try:
-        df.to_sql(table_name, engine, index=False)
+        ds.to_pandas().to_sql(table_name, engine, index=False)
     except Exception as e:
         raise RuntimeError(f"failed to persist table {table_name} to db.")
 

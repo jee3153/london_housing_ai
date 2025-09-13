@@ -1,3 +1,4 @@
+from typing import List
 from pandas import DataFrame
 from src.cleaners import (
     normalise_postcodes,
@@ -14,18 +15,19 @@ from src.feature_engineering import (
     extract_borough_price_trend,
     extract_yearly_district_price_trend,
     extract_avg_price_last_6months,
+    extract_interaction_features,
 )
 from src.config_schemas.CleaningConfig import CleaningConfig
 from src.config_schemas.AugmentConfig import AugmentConfig
 from src.config_schemas.FeatureConfig import FeatureConfig
 from src.config_schemas.TrainConfig import TrainConfig
 from ray_setup import configure_ray_for_repro
-import ray
+from ray.data import Dataset
 
 configure_ray_for_repro()
 
 
-def clean_dataset(ds: ray.data.Dataset, cfg: CleaningConfig) -> ray.data.Dataset:
+def clean_dataset(ds: Dataset, cfg: CleaningConfig) -> Dataset:
 
     def _clean(pdf: DataFrame) -> DataFrame:
         pdf = numeric_cast(pdf, cfg.dtype_map)
@@ -44,8 +46,8 @@ def clean_dataset(ds: ray.data.Dataset, cfg: CleaningConfig) -> ray.data.Dataset
 
 
 async def feature_engineer_dataset(
-    ds: ray.data.Dataset, fe_cfg: FeatureConfig, postcode_col: str
-) -> ray.data.Dataset:
+    ds: Dataset, fe_cfg: FeatureConfig, postcode_col: str
+) -> Dataset:
     # level 1 extractions
     if fe_cfg.city_filter:
         filter_cfg = fe_cfg.city_filter
@@ -58,18 +60,35 @@ async def feature_engineer_dataset(
         ds=ds, extract_from=fe_cfg.timestamp_col, new_col="borough_price_trend"
     )
     ds = extract_yearly_district_price_trend(
-        df=ds,
+        ds=ds,
         district_col="district",
         years_col="sold_year",
         new_col="district_yearly_medians",
     )
     ds = extract_avg_price_last_6months(
-        df=ds,
+        ds=ds,
         new_col="avg_price_last_half",
         date_col=fe_cfg.timestamp_col,
         district_col=fe_cfg.district_col,
     )
-
+    df = extract_interaction_features(
+        ds=ds,
+        combi_col_name="advanced_property_type",
+        col1="is_new_build",
+        col2="property_type",
+    )
+    df = extract_interaction_features(
+        ds=ds,
+        combi_col_name="property_type_and_tenure",
+        col1="is_leasehold",
+        col2="property_type",
+    )
+    df = extract_interaction_features(
+        ds=ds,
+        combi_col_name="property_type_and_district",
+        col1="district",
+        col2="property_type",
+    )
     # add versioning here
     return ds
 
@@ -81,20 +100,24 @@ def build_aug_dataset(df: DataFrame, cfg: AugmentConfig) -> DataFrame:
     return df
 
 
-def df_with_required_cols(df: DataFrame, train_cfg: TrainConfig) -> DataFrame:
-    copied_df = df.copy()
-    required_cols = [
-        *train_cfg.cat_features,
-        *train_cfg.numeric_features,
-        train_cfg.label,
-    ]
-    required_cols_set = set(required_cols)
-    original_cols_set = set(copied_df.columns)
-    intersection = original_cols_set.intersection(required_cols)
+def ds_with_required_cols(ds: Dataset, train_cfg: TrainConfig) -> Dataset:
+    original_cols = ds.columns()
+    if original_cols is None:
+        original_cols = []
+    original_cols_set = set(original_cols)
+    required_cols_set = set(
+        [
+            *train_cfg.cat_features,
+            *train_cfg.numeric_features,
+            train_cfg.label,
+        ]
+    )
+
+    intersection = original_cols_set.intersection(required_cols_set)
 
     if intersection != required_cols_set:
         raise KeyError(
             f"df column has missing columns: {required_cols_set.difference(intersection)}."
             + "If you changed logic on the same day, consider dropping table with today date and dataset_hashes table and rerun train."
         )
-    return df[required_cols]
+    return ds.select_columns(list(required_cols_set))
