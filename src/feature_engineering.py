@@ -71,9 +71,13 @@ async def get_district_from_postcode(
         )
 
     # keep only rows with postcode is not in failed list
-    ds = ds.filter()
-    ds = ds.loc[~ds[postcode_col].isin(failed), :].copy()
-    ds.loc[:, district_col] = ds[postcode_col].map(postcode_to_district_map)
+    ds = ds.filter(lambda row: row[postcode_col] not in failed)
+    # create district column and map each row to their mapped district name from postcode
+    ds.add_column(
+        district_col,
+        lambda df: _add_column(df, postcode_col, postcode_to_district_map),
+        batch_format="pandas",
+    )
 
     print(f"getting district from postcodes is complete. failed queries: {failed}")
     return ds
@@ -115,7 +119,7 @@ async def _fetch_districts_with_retries(
     max_retries: int = MAX_RETRIES,
     backoff_factor: int = BACKOFF_FACTOR,
     rate_sleep: float = RATE_SLEEP,
-) -> tuple[Dict[str, str], List[str]]:
+) -> tuple[Dict[str, str], set[str]]:
     """
     Resolves every postcode independently:
 
@@ -141,7 +145,7 @@ async def _fetch_districts_with_retries(
         if todo:
             await asyncio.sleep(backoff_factor * (2**attempt))
 
-    return done, sorted(todo)
+    return done, todo
 
 
 async def _one_round(
@@ -265,10 +269,14 @@ def extract_borough_price_trend(
 
     ds.add_column(
         col=new_col,
-        fn=lambda df: pd.DataFrame: df[extract_from].map(district_medians),
+        fn=lambda df: _add_column(df, extract_from, district_medians),
         batch_format="pandas",
     )
     return ds
+
+
+def _add_column(df, col: str, map_dict: Dict[Any, Any]) -> pd.Series[Any]:
+    return df[col].map(map_dict)
 
 
 def extract_yearly_district_price_trend(
