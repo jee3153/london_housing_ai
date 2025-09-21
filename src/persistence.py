@@ -6,6 +6,7 @@ import datetime
 import time
 import re
 from psycopg2.errors import UndefinedTable
+import ray
 
 
 def get_engine() -> Engine:
@@ -14,24 +15,26 @@ def get_engine() -> Engine:
     return create_engine(f"postgresql://postgres:password@{host}:5432/{db_name}")
 
 
-def persist_dataset(df: pd.DataFrame, engine: Engine, table_name: str | None = None):
+def persist_dataset(
+    ds: ray.data.Dataset, engine: Engine, table_name: str | None = None
+):
     if table_name == None:
         table_name = _get_table_name_from_date(
             datetime.date.fromtimestamp(time.time()).isoformat()
         )
     try:
-        df.to_sql(table_name, engine, index=False)
+        ds.to_pandas().to_sql(table_name, engine, index=False)
     except Exception as e:
         raise RuntimeError(f"failed to persist table {table_name} to db.")
 
 
-def get_dataset_from_db(engine, table_name: str | None = None) -> pd.DataFrame:
+def get_dataset_from_db(engine, table_name: str | None = None) -> ray.data.Dataset:
     if table_name == None:
         table_name = _get_table_name_from_date(
             datetime.date.fromtimestamp(time.time()).isoformat()
         )
     try:
-        return pd.read_sql_query(f"SELECT * FROM {table_name}", engine)
+        return ray.data.read_sql(f"SELECT * FROM {table_name}", engine)
     except UndefinedTable as e:
         raise ValueError(
             f"table doesn't exist but dataset is already seen."

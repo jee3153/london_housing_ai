@@ -3,26 +3,35 @@ import pandas as pd
 from pandas import DataFrame
 import yaml
 from src.config_schemas.CleaningConfig import CleaningConfig
-from src.config_schemas.AugmentConfig import AugmentConfig
+from src.config_schemas.AugmentConfig import AugmentConfig, JoinType
 from src.config_schemas.TrainConfig import TrainConfig
 from src.config_schemas.ParquetConfig import ParquetConfig
 from src.config_schemas.FeatureConfig import FeatureConfig, CityFilter
+from ray_setup import configure_ray_for_repro
 from pathlib import Path
+import ray
+
+
+ray.data.DatasetContext.get_current().execution_options.preserve_order = (
+    True  # deterministic
+)
+configure_ray_for_repro()
 
 
 def load_dataset(
-    path: Path, schema: List[str], columns_to_load: List[str]
-) -> DataFrame:
-    is_noheader = path.suffixes == [".noheader", ".csv"]
+    paths: List[str], schema: List[str], columns_to_load: List[str]
+) -> ray.data.Dataset:
+    is_noheader = all(Path(p).suffixes == [".noheader", ".csv"] for p in paths)
+
     try:
-        return pd.read_csv(
-            path,
+        return ray.data.read_csv(
+            paths,
             header=None if is_noheader else 0,
             names=schema,
             usecols=columns_to_load,
         )
-    except:
-        raise RuntimeError("schema and column header doesn't match.")
+    except Exception as e:
+        raise RuntimeError("schema and column header doesn't match.") from e
 
 
 def load_cleaning_config(path: Path) -> CleaningConfig:
@@ -51,15 +60,22 @@ def load_augment_config(path: Path) -> AugmentConfig | None:
     raw_config = _load_config(path)
     try:
         raw_config = raw_config["augment_dataset"]
-    except:
+    except KeyError as e:
         return None
 
     config_args = {k: v for k, v in raw_config.items() if v is not None}
 
+    # Ensure join_type maps to Enum
+    field_join_type = "join_type"
+    if field_join_type in config_args and isinstance(config_args[field_join_type], str):
+        config_args[field_join_type] = JoinType[config_args[field_join_type]]
+
     try:
         return AugmentConfig(**config_args)
-    except Exception as e:
-        raise KeyError(f"aug configuration field missing. {e}")
+    except TypeError as e:
+        raise KeyError(f"aug configuration field missing: {e}")
+    except ValueError as e:
+        raise ValueError(f"Invalid Aug configuration value: {e}")
 
 
 def load_train_config(path: Path) -> TrainConfig:

@@ -8,6 +8,7 @@ from catboost import CatBoostRegressor
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.metrics import root_mean_squared_error
 from config_schemas.TrainConfig import TrainConfig
+from ray.data import Dataset
 
 
 class PriceModel:
@@ -35,11 +36,12 @@ class PriceModel:
         )
 
     def _train_test_split(
-        self, df: pd.DataFrame
+        self, ds: Dataset
     ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         testset_ratio = self.cfg.test_size
         valset_ratio = self.cfg.val_size
         trainset_ratio = 1 - testset_ratio
+        df = ds.to_pandas()
 
         y_band = self._make_price_band(df["price"])
         train_test_splitter = StratifiedShuffleSplit(
@@ -50,6 +52,7 @@ class PriceModel:
 
         # split train sets further to train set and validation set
         train_val_df = df.iloc[train_val_idx]  # train_val features
+
         y_band_train_val = y_band.iloc[train_val_idx]  # train_val labels
 
         train_val_splitter = StratifiedShuffleSplit(
@@ -68,8 +71,8 @@ class PriceModel:
         )
 
     # ---------- public API ---------------------------------------------
-    def fit(self, df: pd.DataFrame, checksum: str):
-        train, test, val = self._train_test_split(df)
+    def fit(self, ds: Dataset, checksum: str):
+        train, test, val = self._train_test_split(ds)
 
         # train set
         X_train, y_train = self._split_feature_and_label(train, self.cfg.label)

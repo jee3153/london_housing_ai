@@ -2,7 +2,7 @@ import pandas as pd
 import pytest
 from pandas.testing import assert_series_equal, assert_frame_equal
 from datetime import datetime, timezone
-from src.pipeline import extract_sold_year, df_with_required_cols
+from src.pipeline import extract_sold_year, ds_with_required_cols
 from src.config_schemas.TrainConfig import TrainConfig
 
 
@@ -40,7 +40,7 @@ def test_df_with_required_cols():
             "built_year": [2012, 2014, 2021],
         }
     )
-    actual = df_with_required_cols(original_df, train_config)
+    actual = ds_with_required_cols(original_df, train_config)
     expected = original_df[["district", "distance_from_centre", "price"]].copy()
 
     assert_frame_equal(actual, expected)
@@ -62,4 +62,4 @@ def test_df_missing_label():
     )
 
     with pytest.raises(KeyError, match=r"df column has missing columns:"):
-        df_with_required_cols(original_df, train_config)
+        ds_with_required_cols(original_df, train_config)

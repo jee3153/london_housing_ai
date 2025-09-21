@@ -6,3 +6,4 @@ catboost_info/
 .env
 src/data_lake
 abiding-sunset-333516-4d51fad53404.json
+.DS_Store

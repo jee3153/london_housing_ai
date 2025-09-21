@@ -1,6 +1,12 @@
 import pandas as pd
-from typing import Dict, List, Optional
-import asyncio, aiohttp, async_timeout, time
+import re
+from typing import Dict, List, Optional, Any
+import asyncio, aiohttp, async_timeout
+import ray
+from ray_setup import configure_ray_for_repro
+from utils.data_utils import Median
+from config_schemas.AugmentConfig import JoinType
+
 
 POSTCODE_URL = "https://api.postcodes.io/postcodes"
 MAX_PER_REQ = 100
@@ -11,15 +17,18 @@ BACKOFF_FACTOR = 2
 
 # create concurrent async coroutine
 _sem = asyncio.Semaphore(MAX_CONCURRENCY)
+configure_ray_for_repro()
 
 
 async def get_district_from_postcode(
-    df: pd.DataFrame,
+    ds: ray.data.Dataset,
     postcode_col: str,
     district_col: str,
     batch_size: int = MAX_PER_REQ,
-) -> pd.DataFrame:
-    unique_postcodes = df[postcode_col].dropna().unique().tolist()
+) -> ray.data.Dataset:
+    unique_postcodes: List[str] = ds.filter(
+        lambda row: row[postcode_col] is not None
+    ).unique(column=postcode_col)
 
     async with aiohttp.ClientSession(
         headers={"User-Agent": "LondonHousing/0.1"}
@@ -30,11 +39,16 @@ async def get_district_from_postcode(
         )
 
     # keep only rows with postcode is not in failed list
-    df = df.loc[~df[postcode_col].isin(failed), :].copy()
-    df.loc[:, district_col] = df[postcode_col].map(postcode_to_district_map)
+    ds = ds.filter(lambda row: row[postcode_col] not in failed)
+    # create district column and map each row to their mapped district name from postcode
+    ds.add_column(
+        district_col,
+        lambda df: _add_column(df, postcode_col, postcode_to_district_map),
+        batch_format="pandas",
+    )
 
     print(f"getting district from postcodes is complete. failed queries: {failed}")
-    return df
+    return ds
 
 
 def _chunk(chunkable: List[str], n: int) -> List[List[str]]:
@@ -73,7 +87,7 @@ async def _fetch_districts_with_retries(
     max_retries: int = MAX_RETRIES,
     backoff_factor: int = BACKOFF_FACTOR,
     rate_sleep: float = RATE_SLEEP,
-) -> tuple[Dict[str, str], List[str]]:
+) -> tuple[Dict[str, str], set[str]]:
     """
     Resolves every postcode independently:
 
@@ -99,7 +113,7 @@ async def _fetch_districts_with_retries(
         if todo:
             await asyncio.sleep(backoff_factor * (2**attempt))
 
-    return done, sorted(todo)
+    return done, todo
 
 
 async def _one_round(
@@ -147,11 +161,23 @@ def drop_niche_categories(df: pd.DataFrame, col_name: str, count: int) -> pd.Dat
 
 
 def filter_by_keywords(
-    df: pd.DataFrame, keywords: List[str], col_name: str
-) -> pd.DataFrame:
-    for keyword in keywords:
-        mask = df[col_name].str.contains(keyword, case=False, na=False)
-    return df[mask]
+    ds: ray.data.Dataset, keywords: List[str], col_name: str
+) -> ray.data.Dataset:
+    parts = [re.escape(keyword) for keyword in keywords]
+    pattern = "|".join(parts)
+
+    def _filter_batch(pdf: pd.DataFrame) -> pd.DataFrame:
+        column_normalised = pdf[col_name].astype("string")
+        # create boolean masks on column
+        # 0 True
+        # 1 False
+        # 2 True
+        mask = column_normalised.str.contains(pattern, case=False, na=False)
+        # only keeps rows with True value on the mask
+        return pdf[mask]
+
+    # apply given function to all batches and return that as data frame.
+    return ds.map_batches(_filter_batch, batch_format="pandas")
 
 
 def extract_sold_year(df: pd.DataFrame, timestamp_col: str) -> pd.DataFrame:
@@ -183,26 +209,53 @@ def extract_sold_month(df: pd.DataFrame, timestamp_col: str) -> pd.DataFrame:
 
 
 def extract_borough_price_trend(
-    df: pd.DataFrame, extract_from: str, new_col: str
-) -> pd.DataFrame:
-    """extract price trend from median prices from each district.
+    ds: ray.data.Dataset, extract_from: str, new_col: str
+) -> ray.data.Dataset:
+    """
+    Add a column with median price values grouped by a reference column.
+
+    This computes the median of the "price" column for each unique value
+    in `extract_from` (e.g., timestamp, borough, or district), then maps
+    those medians back to the dataset as a new column.
 
     Args:
-        df (pd.DataFrame): original data frame
-        extract_from (str): column name the data is extracted from
+        ds (ray.data.Dataset): Input Ray dataset containing a "price" column.
+        extract_from (str): Column name to group by when computing medians.
+        new_col (str): Name of the new column to add with median price values.
 
     Returns:
-        pd.DataFrame: data frame which "bourouch_price_trend" column is added.
+        ray.data.Dataset: The dataset with an additional column where each
+        row contains the median "price" of all rows sharing the same
+        `extract_from` value.
     """
-    district_medians = df.groupby(extract_from)["price"].median()
+    district_medians = {
+        row[extract_from]: row["price_median"]
+        for row in ds.groupby(extract_from)
+        .aggregate(Median(on="price", alias_name="price_median"))
+        .take_all()
+    }
 
-    df[new_col] = df[extract_from].map(district_medians)
-    return df
+    ds.add_column(
+        col=new_col,
+        fn=lambda df: _add_column(df, extract_from, district_medians),
+        batch_format="pandas",
+    )
+    return ds
+
+
+def _add_column(df, col: str, map_dict: Dict[Any, Any]) -> pd.DataFrame:
+    return df[col].map(map_dict)
+
+
+def _add_composite_key(ds, cols: List[str], new_col="merge_key") -> ray.data.Dataset:
+    return ds.map_batches(
+        lambda df: df.assign(**{new_col: df[cols].astype(str)}), batch_foramt="pandas"
+    )
 
 
 def extract_yearly_district_price_trend(
-    df: pd.DataFrame, district_col: str, years_col: str, new_col: str
-) -> pd.DataFrame:
+    ds: ray.data.Dataset, district_col: str, years_col: str, new_col: str
+) -> ray.data.Dataset:
     """extract average prices per each (district, year_sold) pair.
     Before:
         ["district", "year_sold", "price", ...]
@@ -227,21 +280,32 @@ def extract_yearly_district_price_trend(
     Returns:
         pd.DataFrame: _description_
     """
+    merge_keys = [district_col, years_col]
     district_yearly_medians = (
         # create a new grouped object prices grouped by district and years sold
-        df.groupby(by=[district_col, years_col])["price"]
-        .median()  # median of each group
-        .reset_index()
-        .rename(columns={"price": new_col})
+        ds.groupby(key=merge_keys).aggregate(
+            Median(on="price", alias_name="price_median")
+        )
     )
-    # merge df + district_yearly_medians: df goes to the left.
-    df = df.merge(district_yearly_medians, on=[district_col, years_col], how="left")
-    return df
+
+    # Create composite key to join on
+    ds = _add_composite_key(ds, merge_keys)
+
+    ds.join(
+        ds=district_yearly_medians,
+        join_type=JoinType.LEFT_OUTER.value,
+        num_partitions=200,
+        on=("merge_key",),
+    )
+
+    ds.rename_columns({"price": new_col})
+
+    return ds
 
 
 def extract_avg_price_last_6months(
-    df: pd.DataFrame, new_col: str, date_col: str, district_col: str
-) -> pd.DataFrame:
+    ds: ray.data.Dataset, new_col: str, date_col: str, district_col: str
+) -> ray.data.Dataset:
     """add column of average price for the last 6 months from the date of each row for each district.
 
     The extraction step:
@@ -301,33 +365,56 @@ def extract_avg_price_last_6months(
     Returns:
         pd.DataFrame: data frame + column that calculated the last median
     """
-    df_sorted_by_date = df.sort_values(date_col)
-    # median price grouped by district (e.g. {"camden": 400k, "hackney": 350k, ...})
-    district_medians = df.groupby("district")["price"].median()
+    MEDIAN_PER_DISTRICT = "global_median"
 
-    df_sorted_by_date[new_col] = (
-        df_sorted_by_date.groupby(district_col, group_keys=False)
-        .apply(
-            # need to exclude district column since it's group key
-            lambda group: _rolling_median(group.drop(columns=[district_col]), date_col)
+    # Sort globally
+    ds = ds.sort(key=date_col)
+
+    # static district median
+    district_medians = ds.groupby(district_col).aggregate(
+        Median(on="price", alias_name=MEDIAN_PER_DISTRICT)
+    )
+
+    ds_with_rolling = ds.groupby(district_col).map_groups(
+        lambda df: _rolling_median(df, date_col, new_col), batch_format="pandas"
+    )
+
+    def _fill_na_from_column(df, new_col: str):
+        df[new_col] = df[new_col].fillna(df[MEDIAN_PER_DISTRICT])
+        return df
+
+    result = (
+        ds_with_rolling.join(
+            district_medians,
+            on=(district_col,),
+            join_type=JoinType.LEFT_OUTER.value,
+            num_partitions=200,
         )
-        .reset_index(drop=True)
+        .map_batches(
+            lambda df: _fill_na_from_column(df, new_col),
+            batch_format="pandas",
+        )
+        .drop_columns([MEDIAN_PER_DISTRICT])
     )
 
-    df_sorted_by_date[new_col] = df_sorted_by_date[new_col].fillna(
-        # map district column -> median price of each district using Series which can be represented using key: value map
-        df_sorted_by_date["district"].map(district_medians)
+    return result
+
+
+def _rolling_median(group, date_col: str, new_col: str) -> pd.DataFrame:
+    group = group.sort_values(date_col)
+    group[new_col] = (
+        group.set_index(date_col)["price"].rolling("180D", closed="left").median()
     )
-    return df_sorted_by_date
-
-
-def _rolling_median(group: pd.DataFrame, date_col: str) -> pd.Series:
-    # if there is no data of the last 180 days for the current row, it will return NaN
-    return group.set_index(date_col)["price"].rolling("180D", closed="left").median()
+    return group.reset_index(drop=True)
 
 
 def extract_interaction_features(
-    df: pd.DataFrame, combi_col_name: str, col1: str, col2: str, sep: str = "_"
-) -> pd.DataFrame:
-    df[combi_col_name] = df[col1].astype(str) + sep + df[col2].astype(str)
-    return df
+    ds: ray.data.Dataset, combi_col_name: str, col1: str, col2: str, sep: str = "_"
+) -> ray.data.Dataset:
+    ds.map_batches(
+        lambda df: df.assign(  # type: ignore[arg-type]
+            **{combi_col_name: df[col1].astype(str) + sep + df[col2].astype(str)}
+        ),
+        batch_format="pandas",
+    )
+    return ds

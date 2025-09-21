@@ -3,5 +3,8 @@ name = "ai_platform"
 version = "0.1.0"
 packages = ["src"]
 
+[tool.pyright]
+extraPaths = ["typings"]
+
 [tool.pytest.ini_options]
 pythonpath = ["."]
