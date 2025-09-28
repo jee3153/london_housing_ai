@@ -64,9 +64,20 @@ jobs:
           export EPC_API_KEY=${{ secrets.EPC_API_KEY }}
           ls -l $HOME/gcp-key.json
 
+          PROJECT_ID=$(jq -r '.project_id' $HOME/gcp-key.json)
+          echo "PROJECT_ID=$PROJECT_ID" >> $GITHUB_ENV
+
+          gcloud auth activate-service-account --key-file=$HOME/gcp-key.json
+          gcloud config set project $PROJECT_ID
+          
       - uses: actions/checkout@v4
       - name: Build Docker Image
         run: |
           docker compose build
-          docker compose run train
+          docker compose run -e GOOGLE_APPLICATION_CREDENTIALS=/secrets/gcp-key.json \
+          -v $HOME/gcp-key.json:/secrets/gcp-key.json \
+          train
           docker compose up api
+      - name: clean up GCP credentials    
+        run: |
+          gsutil rm gs://london-housing/**
