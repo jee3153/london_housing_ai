@@ -7,7 +7,7 @@ from typing import Tuple, Any
 from catboost import CatBoostRegressor
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.metrics import root_mean_squared_error
-from config_schemas.TrainConfig import TrainConfig
+from london_housing_ai.config_schemas.TrainConfig import TrainConfig
 
 
 class PriceModel:

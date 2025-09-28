@@ -4,7 +4,7 @@ import asyncio
 import datetime
 import time
 import re
-
+import mlflow.catboost as mlflow_catboost
 from argparse import Namespace
 from pathlib import Path
 from london_housing_ai.loaders import (
@@ -20,9 +20,9 @@ from london_housing_ai.pipeline import (
     feature_engineer_dataset,
     df_with_required_cols,
 )
-from augmenters import add_floor_area
-from models import PriceModel
-from persistence import (
+from london_housing_ai.augmenters import add_floor_area
+from london_housing_ai.models import PriceModel
+from london_housing_ai.persistence import (
     persist_dataset,
     get_engine,
     get_dataset_from_db,
@@ -32,8 +32,11 @@ from persistence import (
     _get_table_name_from_date,
     table_exists,
 )
-from file_injest import write_df_to_partitioned_parquet, upload_parquet_to_gcs
-from utils.checksum import file_sha256
+from london_housing_ai.file_injest import (
+    write_df_to_partitioned_parquet,
+    upload_parquet_to_gcs,
+)
+from london_housing_ai.utils.checksum import file_sha256
 from dotenv import load_dotenv
 import os
 
@@ -133,6 +136,11 @@ def main(args: Namespace) -> None:
         train_cfg = load_train_config(config_path)
         trainer = PriceModel(train_cfg)
         trainer.fit(df_with_required_cols(df, train_cfg), checksum)
+
+        # log trained model into MLflow under consistent path
+        mlflow_catboost.log_model(
+            cb_model=trainer.model, artifact_path="catboost_model"
+        )
 
 
 if __name__ == "__main__":

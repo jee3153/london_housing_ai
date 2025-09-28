@@ -3,10 +3,6 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "london-housing-ai"
-version = "0.1.0"
-description = "AI Platform for training, data ingestion, and model versioning with MLflow"
-requires-python = ">=3.12.11"
 dependencies = [
     # Core data science and ML libraries
     "pandas==2.3.1",
@@ -36,6 +32,11 @@ dependencies = [
     "starlette==0.46.2",
     "pydantic==2.11.7",
     "pydantic_core==2.33.2",
+    "aiohttp==3.12.13",
+    "aiohttp-cors==0.8.1",
+    "async-timeout==5.0.1",
+    "httpx==0.28.1",
+    "python-multipart==0.0.20",
 
     # Utilities
     "python-dotenv==1.1.1",
@@ -44,6 +45,10 @@ dependencies = [
     "rich==14.0.0",
     "requests==2.32.4",
 ]
+name = "london-housing-ai"
+version = "0.1.0"
+description = "AI Platform for training, data ingestion, and model versioning with MLflow"
+requires-python = ">=3.12.11"
 
 [project.optional-dependencies]
 # ML Training and model development
@@ -100,7 +105,13 @@ build = [
 ]
 
 # All dependencies for complete development setup
-all = ["ai-platform[training,dev,serving,data,build]"]
+all = [
+    "london-housing-ai[training]",
+    "london-housing-ai[dev]",
+    "london-housing-ai[serving]",
+    "london-housing-ai[data]",
+    "london-housing-ai[build]",
+]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
@@ -147,7 +158,7 @@ ignore_missing_imports = true
 mypy_path = "src"
 
 [tool.setuptools.packages.find]
-where = ["."]
+where = ["src"]
 include = ["london_housing_ai*"]
 exclude = ["tests*"]
 
