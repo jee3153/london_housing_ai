@@ -1,5 +1,4 @@
 from sqlalchemy import create_engine, Engine, text, inspect
-from typing import List
 import os
 import pandas as pd
 import datetime
@@ -15,18 +14,18 @@ def get_engine() -> Engine:
 
 
 def persist_dataset(df: pd.DataFrame, engine: Engine, table_name: str | None = None):
-    if table_name == None:
+    if table_name is None:
         table_name = _get_table_name_from_date(
             datetime.date.fromtimestamp(time.time()).isoformat()
         )
     try:
         df.to_sql(table_name, engine, index=False)
-    except Exception as e:
+    except Exception:
         raise RuntimeError(f"failed to persist table {table_name} to db.")
 
 
 def get_dataset_from_db(engine, table_name: str | None = None) -> pd.DataFrame:
-    if table_name == None:
+    if table_name is None:
         table_name = _get_table_name_from_date(
             datetime.date.fromtimestamp(time.time()).isoformat()
         )
@@ -34,9 +33,9 @@ def get_dataset_from_db(engine, table_name: str | None = None) -> pd.DataFrame:
         return pd.read_sql_query(f"SELECT * FROM {table_name}", engine)
     except UndefinedTable as e:
         raise ValueError(
-            f"table doesn't exist but dataset is already seen."
+            "table doesn't exist but dataset is already seen."
             + "If you are ingesting the same csv again for development purpose,"
-            + "please remove your checksum record in 'dataset_hashes' table. Error: {e}"
+            + f"please remove your checksum record in 'dataset_hashes' table. Error: {e}"
         )
 
 

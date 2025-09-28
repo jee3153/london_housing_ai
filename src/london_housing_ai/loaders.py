@@ -21,8 +21,8 @@ def load_dataset(
             names=schema,
             usecols=columns_to_load,
         )
-    except:
-        raise RuntimeError("schema and column header doesn't match.")
+    except Exception as e:
+        raise RuntimeError(f"schema and column header doesn't match.: {e}")
 
 
 def load_cleaning_config(path: Path) -> CleaningConfig:
@@ -51,7 +51,7 @@ def load_augment_config(path: Path) -> AugmentConfig | None:
     raw_config = _load_config(path)
     try:
         raw_config = raw_config["augment_dataset"]
-    except:
+    except Exception:
         return None
 
     config_args = {k: v for k, v in raw_config.items() if v is not None}

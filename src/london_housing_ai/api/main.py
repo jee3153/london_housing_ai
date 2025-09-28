@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 import mlflow.pyfunc
-import pandas as pd
 import numpy as np
 from mlflow.tracking import MlflowClient
 from london_housing_ai.predict import transform_to_training_features
