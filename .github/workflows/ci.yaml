@@ -77,7 +77,7 @@ jobs:
           docker compose run -e GOOGLE_APPLICATION_CREDENTIALS=/secrets/gcp-key.json \
           -v $HOME/gcp-key.json:/secrets/gcp-key.json \
           train
-          docker compose up api
-      - name: clean up GCP credentials    
+      - name: clean up GCP credentials 
+        if: always()   
         run: |
           gsutil rm gs://london-housing/**
