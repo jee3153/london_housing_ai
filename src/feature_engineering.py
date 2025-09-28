@@ -56,13 +56,13 @@ async def _bulk_lookup(
                 res = await session.post(POSTCODE_URL, json=body)
 
             if res.status == 429:
-                return
+                return None
 
             res.raise_for_status()
             return (await res.json())["result"]
 
         except (aiohttp.ClientError, asyncio.TimeoutError):
-            return
+            return None
 
 
 async def _fetch_districts_with_retries(
@@ -149,8 +149,9 @@ def drop_niche_categories(df: pd.DataFrame, col_name: str, count: int) -> pd.Dat
 def filter_by_keywords(
     df: pd.DataFrame, keywords: List[str], col_name: str
 ) -> pd.DataFrame:
+    mask = pd.Series([True] * len(df), index=df.index)
     for keyword in keywords:
-        mask = df[col_name].str.contains(keyword, case=False, na=False)
+        mask &= df[col_name].str.contains(keyword, case=False, na=False)
     return df[mask]
 
 

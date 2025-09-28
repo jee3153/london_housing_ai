@@ -1,0 +1,1 @@
+# Configuration schemas for the AI platform

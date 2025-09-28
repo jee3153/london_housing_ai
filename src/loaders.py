@@ -108,6 +108,7 @@ def load_parquet_config(path: Path) -> ParquetConfig:
         raise KeyError(f"parquet configuration field missing. {e}")
 
 
-def _load_config(path: Path) -> Dict[Any, Any]:
+def _load_config(path: Path) -> Dict[str, Any]:
     with open(path) as f:
-        return yaml.safe_load(f)
+        config = yaml.safe_load(f)
+        return config if config is not None else {}
