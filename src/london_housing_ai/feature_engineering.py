@@ -1,8 +1,9 @@
-import pandas as pd
-from typing import Dict, List, Optional
 import asyncio
+from typing import Dict, List, Optional
+
 import aiohttp
 import async_timeout
+import pandas as pd
 
 POSTCODE_URL = "https://api.postcodes.io/postcodes"
 MAX_PER_REQ = 100

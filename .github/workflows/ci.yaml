@@ -13,6 +13,7 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
@@ -30,23 +31,39 @@ jobs:
         run: |
           # type check with mypy
           mypy src
+          echo "::notice::Type checking passed!"
 
           # check if code is formatted (fails if not)
           black --check --diff .
+          echo "::notice::Code formatting is correct"
+
+          isort --check-only --dif src
+          echo "::notice::Import sorting is correct"
 
           # stop the build if there are Python syntax errors or undefined names
           flake8 src --count --select=E9,F63,F7,F82 --show-source --statistics
 
           # exit-zero treats all errors as warnings
           flake8 src --count --exit-zero --max-complexity=10 --max-line-length=136 --statistics
+          echo "::notice::No linting issues found"
 
       - name: Test with pytest
-        run: pytest -v
+        run: |
+          pytest -v
+          echo "::notice::All pytest passed"
 
   docker-build:
     runs-on: ubuntu-latest
+    environment: CREDENTIALS
     needs: test
     steps:
+      - name: set credentials
+        run: |
+          echo '${{ secrets.GCP_CREDENTIALS_JSON }}' > $HOME/gcp-key.json
+          export GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcp-key.json
+          export EPC_API_KEY=${{ secrets.EPC_API_KEY }}
+          ls -l $HOME/gcp-key.json
+
       - uses: actions/checkout@v4
       - name: Build Docker Image
         run: |

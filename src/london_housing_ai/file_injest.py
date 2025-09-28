@@ -1,12 +1,13 @@
+import json
+import os
+import shutil
+from pathlib import Path
 from typing import List
+
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
-from pathlib import Path
 from google.cloud import storage
-import json
-import shutil
-import os
 
 
 def write_df_to_partitioned_parquet(

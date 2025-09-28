@@ -1,10 +1,11 @@
-from sqlalchemy import create_engine, Engine, text, inspect
-import os
-import pandas as pd
 import datetime
-import time
+import os
 import re
+import time
+
+import pandas as pd
 from psycopg2.errors import UndefinedTable
+from sqlalchemy import Engine, create_engine, inspect, text
 
 
 def get_engine() -> Engine:

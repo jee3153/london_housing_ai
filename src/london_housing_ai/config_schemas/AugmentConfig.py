@@ -1,5 +1,5 @@
-from typing import List, Dict, Literal
 from dataclasses import dataclass
+from typing import Dict, List, Literal
 
 
 @dataclass(frozen=True)

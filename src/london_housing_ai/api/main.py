@@ -1,8 +1,9 @@
-from fastapi import FastAPI
-from pydantic import BaseModel
 import mlflow.pyfunc
 import numpy as np
+from fastapi import FastAPI
 from mlflow.tracking import MlflowClient
+from pydantic import BaseModel
+
 from london_housing_ai.predict import transform_to_training_features
 
 client = MlflowClient(tracking_uri="http://mlflow:5000")

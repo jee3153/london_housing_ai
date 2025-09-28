@@ -1,6 +1,7 @@
+from typing import Dict, List
+
 import pandas as pd
 from pandas import DataFrame, Series
-from typing import List, Dict
 
 POSTCODE_CLEAN = "postcode_clean"
 

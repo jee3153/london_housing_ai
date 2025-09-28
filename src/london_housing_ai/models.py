@@ -1,12 +1,14 @@
 # models.py
+from typing import Any, Tuple
+
 import mlflow
 import numpy as np
 import pandas as pd
-from numpy.typing import NDArray
-from typing import Tuple, Any
 from catboost import CatBoostRegressor
-from sklearn.model_selection import StratifiedShuffleSplit
+from numpy.typing import NDArray
 from sklearn.metrics import root_mean_squared_error
+from sklearn.model_selection import StratifiedShuffleSplit
+
 from london_housing_ai.config_schemas.TrainConfig import TrainConfig
 
 
