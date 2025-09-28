@@ -4,6 +4,7 @@ import mlflow.pyfunc
 import pandas as pd
 import numpy as np
 from mlflow.tracking import MlflowClient
+from london_housing_ai.predict import transform_to_training_features
 
 client = MlflowClient(tracking_uri="http://mlflow:5000")
 runs = client.search_runs(
@@ -34,6 +35,13 @@ class HousingData(BaseModel):
 
 @app.post("/predict")
 def predict(data: HousingData):
-    df = pd.DataFrame([data.model_dump()])
-    preds = model.predict(df)
-    return {"predicted_price": round(np.expm1(preds[0]), 2)}
+    # Step 1: Convert user input
+    user_input = data.model_dump()
+
+    # Step 2: Transform into training features
+    features = transform_to_training_features(user_input)
+    print(features.to_dict(orient="records"))
+    print(features.dtypes)
+    # Step 3: Predict
+    preds = model.predict(features)
+    return {"predicted_price": round(float(np.expm1(preds[0])), 2)}
