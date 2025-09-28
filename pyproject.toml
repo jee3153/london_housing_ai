@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "ai-platform"
+name = "london-housing-ai"
 version = "0.1.0"
 description = "AI Platform for training, data ingestion, and model versioning with MLflow"
 requires-python = ">=3.12.11"
@@ -103,7 +103,7 @@ build = [
 all = ["ai-platform[training,dev,serving,data,build]"]
 
 [tool.pytest.ini_options]
-pythonpath = ["."]
+pythonpath = ["src"]
 testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py"]
 python_functions = ["test_*"]
@@ -131,7 +131,7 @@ extend-exclude = '''
 profile = "black"
 multi_line_output = 3
 line_length = 88
-known_first_party = ["ai_platform"]
+known_first_party = ["london_housing_ai"]
 
 [tool.mypy]
 python_version = "3.12"
@@ -148,7 +148,7 @@ mypy_path = "src"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["ai_platform*"]
+include = ["london_housing_ai*"]
 exclude = ["tests*"]
 
 [project.urls]

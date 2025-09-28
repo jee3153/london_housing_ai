@@ -7,7 +7,7 @@ import re
 
 from argparse import Namespace
 from pathlib import Path
-from src.loaders import (
+from london_housing_ai.loaders import (
     load_dataset,
     load_cleaning_config,
     load_augment_config,
@@ -15,7 +15,7 @@ from src.loaders import (
     load_fe_config,
     load_parquet_config,
 )
-from src.pipeline import (
+from london_housing_ai.pipeline import (
     clean_dataset,
     feature_engineer_dataset,
     df_with_required_cols,

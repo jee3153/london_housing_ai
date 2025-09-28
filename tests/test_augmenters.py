@@ -1,4 +1,4 @@
-from src.augmenters import add_floor_area
+from london_housing_ai.augmenters import add_floor_area
 from pandas import DataFrame
 from pandas.testing import assert_frame_equal
 

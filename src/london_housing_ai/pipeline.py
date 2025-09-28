@@ -1,12 +1,12 @@
 from pandas import DataFrame
-from src.cleaners import (
+from london_housing_ai.cleaners import (
     normalise_postcodes,
     numeric_cast,
     clip_upper_bound,
     drop_na,
     rename_column,
 )
-from src.feature_engineering import (
+from london_housing_ai.feature_engineering import (
     get_district_from_postcode,
     filter_by_keywords,
     extract_sold_year,
@@ -16,10 +16,10 @@ from src.feature_engineering import (
     extract_avg_price_last_6months,
     extract_interaction_features,
 )
-from src.config_schemas.CleaningConfig import CleaningConfig
-from src.config_schemas.AugmentConfig import AugmentConfig
-from src.config_schemas.FeatureConfig import FeatureConfig
-from src.config_schemas.TrainConfig import TrainConfig
+from london_housing_ai.config_schemas.CleaningConfig import CleaningConfig
+from london_housing_ai.config_schemas.AugmentConfig import AugmentConfig
+from london_housing_ai.config_schemas.FeatureConfig import FeatureConfig
+from london_housing_ai.config_schemas.TrainConfig import TrainConfig
 
 
 def clean_dataset(df: DataFrame, cfg: CleaningConfig) -> DataFrame:

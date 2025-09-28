@@ -1,5 +1,5 @@
 import csv
-from src.loaders import (
+from london_housing_ai.loaders import (
     load_dataset,
     load_cleaning_config,
     load_augment_config,
