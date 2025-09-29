@@ -1,6 +1,6 @@
 import pandas as pd
 from pandas.testing import assert_frame_equal
-from src.feature_engineering import extract_interaction_features
+from london_housing_ai.feature_engineering import extract_interaction_features
 
 
 def test_extract_interaction_features():

@@ -4,21 +4,21 @@ services:
       - postgres
       - mlflow
     working_dir: /app
-    command: python src/train_main.py --config config_dataset2.yaml --csv May-2025-data.csv
+    command: python -m london_housing_ai.train_main --config config_dataset2.yaml --csv May-2025-data.csv
     build: .
     volumes:
       - ./:/app
       - ./mlruns:/mlruns
     ports:
-      - "8000:8000" 
+      - "8000:8000"
     environment:
       MLFLOW_TRACKING_URI: http://mlflow:5000
       POSTGRES_PORT: 5432
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
       MODE: PROD
-      PYTHONPATH: /app  
-        
+      PYTHONPATH: /app/src
+
   postgres:
     image: postgres:16
     environment:
@@ -54,18 +54,18 @@ services:
   api:
     build: .
     working_dir: /app
-    command: uvicorn src.api.main:app --host 0.0.0.0 --port 7777 --reload
+    command: uvicorn london_housing_ai.api.main:app --host 0.0.0.0 --port 7777 --reload
     depends_on:
       - mlflow
     ports:
-      - "7777:7777"  
+      - "7777:7777"
     environment:
       MLFLOW_TRACKING_URI: http://mlflow:5000
-      PYTHONPATH: /app  
-      MODE: PROD  
+      PYTHONPATH: /app/src
+      MODE: PROD
     volumes:
       - ./:/app
-      - ./mlruns:/mlruns    
+      - ./mlruns:/mlruns
 
 volumes:
-  pgdata:      
+  pgdata:

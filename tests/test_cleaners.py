@@ -1,6 +1,6 @@
 from pandas import Series, DataFrame
 from pandas.testing import assert_series_equal, assert_frame_equal
-from src.cleaners import (
+from london_housing_ai.cleaners import (
     canon_postcode,
     numeric_cast,
     normalise_postcodes,

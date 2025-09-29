@@ -2,8 +2,8 @@ import pandas as pd
 import pytest
 from pandas.testing import assert_series_equal, assert_frame_equal
 from datetime import datetime, timezone
-from src.pipeline import extract_sold_year, df_with_required_cols
-from src.config_schemas.TrainConfig import TrainConfig
+from london_housing_ai.pipeline import extract_sold_year, df_with_required_cols
+from london_housing_ai.config_schemas.TrainConfig import TrainConfig
 
 
 def test_add_sold_year_column():

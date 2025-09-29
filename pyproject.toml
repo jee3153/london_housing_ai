@@ -1,7 +1,169 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
-name = "ai_platform"
+dependencies = [
+    # Core data science and ML libraries
+    "pandas==2.3.1",
+    "numpy==2.3.1",
+    "scikit-learn==1.7.0",
+    "scipy==1.16.0",
+    "matplotlib==3.10.3",
+    "plotly==6.2.0",
+    "pillow==11.3.0",
+
+    # MLflow and experiment tracking
+    "mlflow==3.1.1",
+    "mlflow-skinny==3.1.1",
+
+    # Database and storage
+    "psycopg2-binary==2.9.10",
+    "SQLAlchemy==2.0.41",
+    "alembic==1.16.2",
+    "google-cloud-storage==3.2.0",
+    "google-cloud-core==2.4.3",
+    "pyarrow==20.0.0",
+
+    # API and web framework
+    "fastapi==0.115.14",
+    "fastapi-cli==0.0.7",
+    "uvicorn==0.35.0",
+    "starlette==0.46.2",
+    "pydantic==2.11.7",
+    "pydantic_core==2.33.2",
+    "aiohttp==3.12.13",
+    "aiohttp-cors==0.8.1",
+    "async-timeout==5.0.1",
+    "httpx==0.28.1",
+    "python-multipart==0.0.20",
+
+    # Utilities
+    "python-dotenv==1.1.1",
+    "PyYAML==6.0.2",
+    "click==8.2.1",
+    "rich==14.0.0",
+    "requests==2.32.4",
+]
+name = "london-housing-ai"
 version = "0.1.0"
-packages = ["src"]
+description = "AI Platform for training, data ingestion, and model versioning with MLflow"
+requires-python = ">=3.12.11"
+
+[project.optional-dependencies]
+# ML Training and model development
+training = [
+    "catboost==1.2.8",
+    "ray==2.49.2",
+    "tensorboardX==2.6.4",
+    "joblib==1.5.1",
+    "cloudpickle==3.1.1",
+    "dill==0.4.0",
+]
+
+# Development tools
+dev = [
+    "pytest==8.4.1",
+    "black==25.1.0",
+    "flake8>=5.0.0",
+    "pylint==3.3.7",
+    "isort==6.0.1",
+    "mypy>=1.0.0",
+    "mypy_extensions==1.1.0",
+    "debugpy==1.8.16",
+    "jupyter",                # Add if you need Jupyter
+    # Type stubs for external libraries
+    "pandas-stubs>=2.0.0",
+    "types-PyYAML>=6.0.0",
+    "types-psycopg2>=2.9.0",
+    "types-requests>=2.28.0",
+]
+
+# Production serving and deployment
+serving = [
+    "gunicorn==23.0.0",
+    "docker==7.1.0",
+    "prometheus_client==0.22.1",
+    "opentelemetry-api==1.34.1",
+    "opentelemetry-sdk==1.34.1",
+    "opentelemetry-exporter-prometheus==0.55b1",
+]
+
+# Data processing and validation
+data = [
+    "smart_open==7.3.0.post1",
+    "fsspec==2025.7.0",
+    "jsonschema==4.25.1",
+    "jsonschema-specifications==2025.4.1",
+]
+
+# Build and deployment tools
+build = [
+    "build==1.2.2.post1",
+    "pip-tools==7.4.1",
+    "setuptools==80.9.0",
+    "wheel==0.45.1",
+]
+
+# All dependencies for complete development setup
+all = [
+    "london-housing-ai[training]",
+    "london-housing-ai[dev]",
+    "london-housing-ai[serving]",
+    "london-housing-ai[data]",
+    "london-housing-ai[build]",
+]
 
 [tool.pytest.ini_options]
-pythonpath = ["."]
+pythonpath = ["src"]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_functions = ["test_*"]
+addopts = "--tb=short --strict-markers"
+
+[tool.black]
+line-length = 88
+target-version = ['py38', 'py39', 'py310', 'py311']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88
+known_first_party = ["london_housing_ai"]
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = false
+warn_unused_configs = true
+disallow_untyped_defs = false
+show_error_codes = true
+
+# Handle missing imports gracefully
+ignore_missing_imports = true
+
+# Local module paths
+mypy_path = "src"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["london_housing_ai*"]
+exclude = ["tests*"]
+
+[project.urls]
+"Homepage" = "https://github.com/jee3153/london_housing_ai"
+"Repository" = "https://github.com/jee3153/london_housing_ai"
+"Bug Tracker" = "https://github.com/jee3153/london_housing_ai/issues"

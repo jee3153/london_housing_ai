@@ -1,0 +1,82 @@
+name: London Housing AI CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+    contents: read
+  
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.12.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[all]"
+
+      - name: Lint and format
+        run: |
+          # type check with mypy
+          mypy src
+          echo "::notice::Type checking passed!"
+
+          # check if code is formatted (fails if not)
+          black --check --diff .
+          echo "::notice::Code formatting is correct"
+
+          isort --check-only --dif src
+          echo "::notice::Import sorting is correct"
+
+          # stop the build if there are Python syntax errors or undefined names
+          flake8 src --count --select=E9,F63,F7,F82 --show-source --statistics
+
+          # exit-zero treats all errors as warnings
+          flake8 src --count --exit-zero --max-complexity=10 --max-line-length=136 --statistics
+          echo "::notice::No linting issues found"
+
+      - name: Test with pytest
+        run: |
+          pytest -v
+          echo "::notice::All pytest passed"
+
+  docker-build:
+    runs-on: ubuntu-latest
+    environment: CREDENTIALS
+    needs: test
+    steps:
+      - name: set credentials
+        run: |
+          echo '${{ secrets.GCP_CREDENTIALS_JSON }}' > $HOME/gcp-key.json
+          export GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcp-key.json
+          export EPC_API_KEY=${{ secrets.EPC_API_KEY }}
+          ls -l $HOME/gcp-key.json
+
+          PROJECT_ID=$(jq -r '.project_id' $HOME/gcp-key.json)
+          echo "PROJECT_ID=$PROJECT_ID" >> $GITHUB_ENV
+
+          gcloud auth activate-service-account --key-file=$HOME/gcp-key.json
+          gcloud config set project $PROJECT_ID
+          
+      - uses: actions/checkout@v4
+      - name: Build Docker Image
+        run: |
+          docker compose build
+          docker compose run -e GOOGLE_APPLICATION_CREDENTIALS=/secrets/gcp-key.json \
+          -v $HOME/gcp-key.json:/secrets/gcp-key.json \
+          train
+      - name: clean up GCP credentials 
+        if: always()   
+        run: |
+          gsutil rm gs://london-housing/**
