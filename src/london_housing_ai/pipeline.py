@@ -1,3 +1,4 @@
+from typing import Optional
 from pandas import DataFrame
 
 from london_housing_ai.cleaners import (
@@ -21,6 +22,9 @@ from london_housing_ai.feature_engineering import (
     filter_by_keywords,
     get_district_from_postcode,
 )
+from london_housing_ai.utils.logger import get_logger
+
+logger = get_logger()
 
 
 def clean_dataset(df: DataFrame, cfg: CleaningConfig) -> DataFrame:
@@ -44,6 +48,11 @@ async def feature_engineer_dataset(
     if fe_cfg.city_filter:
         filter_cfg = fe_cfg.city_filter
         df = filter_by_keywords(df, filter_cfg.filter_keywords, filter_cfg.city_col)
+        if df.empty:
+            logger.warning(
+                f"dataframe is empty after filtering with keyword '{filter_cfg.filter_keywords}'"
+            )
+            return df
     if fe_cfg.use_district:
         df = await get_district_from_postcode(df, postcode_col, fe_cfg.district_col)
 

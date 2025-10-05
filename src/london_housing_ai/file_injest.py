@@ -8,6 +8,9 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 from google.cloud import storage
+from london_housing_ai.utils.logger import get_logger
+
+logger = get_logger()
 
 
 def write_df_to_partitioned_parquet(
@@ -50,7 +53,7 @@ def upload_parquet_to_gcs(
         blob = bucket.blob(blob_name)
         blob.upload_from_filename(str(local_file_path))
 
-        print(f"Uploaded {local_file_path} to gs://{bucket_name}/{blob_name}")
+        logger.info(f"Uploaded {local_file_path} to gs://{bucket_name}/{blob_name}")
 
     if cleanup:
         _cleanup_local_parquets(local_dir)

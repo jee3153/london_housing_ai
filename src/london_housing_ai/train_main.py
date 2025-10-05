@@ -40,8 +40,11 @@ from london_housing_ai.pipeline import (
     feature_engineer_dataset,
 )
 from london_housing_ai.utils.checksum import file_sha256
+from london_housing_ai.utils.paths import get_project_root
+from london_housing_ai.utils.logger import get_logger
 
 load_dotenv()
+logger = get_logger()
 
 
 def main(args: Namespace) -> None:
@@ -50,13 +53,13 @@ def main(args: Namespace) -> None:
         raise ValueError(
             f"Argument value for config and csv are required. config='{args.config}', csv='{args.csv}'"
         )
+    mlflow_tracking_uri = os.getenv("MLFLOW_TRACKING_URI", "http://mlflow:5000")
+    mlflow.set_tracking_uri(mlflow_tracking_uri)
+    logger.info("Current tracking URI is:", mlflow.get_tracking_uri())
 
-    mlflow.set_tracking_uri("http://mlflow:5000")
-    print("Current tracking URI is:", mlflow.get_tracking_uri())
-
-    root_path = Path(__file__).resolve().parent  # /app
-    config_path = root_path / "configs" / args.config
-    csv_path = root_path / "data" / args.csv
+    root_path = get_project_root()  # /app
+    config_path = root_path / args.config
+    csv_path = root_path / args.csv
     data_path = root_path / "data_lake"
 
     engine = get_engine()
@@ -67,12 +70,12 @@ def main(args: Namespace) -> None:
     )
     # if dataset exists load dataset from db
     if dataset_already_persisted(engine, checksum) or table_exists(engine, table_name):
-        print(
+        logger.info(
             f"checksum '{checksum}' for '{csv_path}' is found, skipping cleaning and extraction."
         )
         df = get_dataset_from_db(engine, table_name)
     else:
-        print(
+        logger.info(
             f"checksum '{checksum}' for '{csv_path}' is not found, proceeding cleaning and extraction."
         )
 
@@ -106,6 +109,8 @@ def main(args: Namespace) -> None:
                 df, load_fe_config(config_path), cleaning_config.postcode_col
             )
         )
+        if df.empty:
+            return
         # merging with supplement dataset
         if args.aug:
             aug_config = load_augment_config(config_path)
@@ -133,6 +138,7 @@ def main(args: Namespace) -> None:
         record_checksum(engine, checksum, table_name)
 
     # model training
+    mlflow.set_experiment("catboost_baseline_experiment")
     with mlflow.start_run(run_name="catboost_baseline"):
         train_cfg = load_train_config(config_path)
         trainer = PriceModel(train_cfg)

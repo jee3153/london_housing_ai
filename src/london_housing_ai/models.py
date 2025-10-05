@@ -10,6 +10,9 @@ from sklearn.metrics import root_mean_squared_error
 from sklearn.model_selection import StratifiedShuffleSplit
 
 from london_housing_ai.config_schemas.TrainConfig import TrainConfig
+from london_housing_ai.utils.logger import get_logger
+
+logger = get_logger()
 
 
 class PriceModel:
@@ -88,11 +91,11 @@ class PriceModel:
 
         # this presents which feature contribution rates
         importances = self.model.get_feature_importance()
-        print(f"columns: {X_train.columns}")
+        logger.info(f"columns: {X_train.columns}")
         importance_df = pd.DataFrame(
             {"feature": X_train.columns, "importance": importances}
         ).sort_values("importance", ascending=False)
-        print(f"==========importance========\n{importance_df}")
+        logger.info(f"==========importance========\n{importance_df}")
 
         # test set evaluation
         y_true, y_pred = self.predict(test)

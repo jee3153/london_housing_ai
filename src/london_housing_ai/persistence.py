@@ -2,16 +2,21 @@ import datetime
 import os
 import re
 import time
-
 import pandas as pd
+import psycopg2
 from psycopg2.errors import UndefinedTable
 from sqlalchemy import Engine, create_engine, inspect, text
 
 
 def get_engine() -> Engine:
-    db_name = "postgres" if os.environ["MODE"] == "PROD" else "mypostgres"
-    host = "postgres" if os.environ["MODE"] == "PROD" else "localhost"
-    return create_engine(f"postgresql://postgres:password@{host}:5432/{db_name}")
+    # db_name = "postgres" if os.environ["MODE"] == "PROD" else "mypostgres"
+    # host = "postgres" if os.environ["MODE"] == "PROD" else "localhost"
+    username = os.getenv("DB_USERNAME", "postgres")
+    password = os.getenv("DB_PASSWORD", "password")
+    host = os.getenv("DB_HOST", "localhost")
+    port = os.getenv("DB_PORT", "5432")
+    db_name = os.getenv("DB_NAME", "postgres")
+    return create_engine(f"postgresql://{username}:{password}@{host}:{port}/{db_name}")
 
 
 def persist_dataset(df: pd.DataFrame, engine: Engine, table_name: str | None = None):

@@ -2,7 +2,9 @@ from typing import Literal
 
 import pandas as pd
 from pandas import DataFrame
+from london_housing_ai.utils.logger import get_logger
 
+logger = get_logger()
 """
     Add median floor-area (ft²) from EPC data to the main PPD DataFrame.
 
@@ -45,7 +47,7 @@ def add_floor_area(
     merged_df = main_df.merge(agg_df, on=merge_key, how=how, validate="m:1")
 
     match_rate = merged_df[floor_col].notna().mean()
-    print(f"Matched floor-area for {match_rate:.1%} of rows")
+    logger.info(f"Matched floor-area for {match_rate:.1%} of rows")
 
     if min_match_rate and match_rate < min_match_rate:
         raise ValueError(
