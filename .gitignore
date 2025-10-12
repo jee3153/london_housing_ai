@@ -8,3 +8,6 @@ abiding-sunset-*.json
 .DS_Store
 london_housing_ai.egg-info
 /data_lake
+.terraform
+terraform.tfstate*
+terraform.tfvars
