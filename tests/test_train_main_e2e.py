@@ -86,4 +86,4 @@ def test_train_main_e2e(request: pytest.FixtureRequest):
     )
 
     assert result.returncode == 0, f"Train pipeline failed:\n{result.stderr}"
-    assert "==========importance========" in result.stdout
+    assert "the experiment of model has completed." in result.stdout

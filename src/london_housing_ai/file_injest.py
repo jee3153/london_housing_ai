@@ -41,11 +41,7 @@ def upload_parquet_to_gcs(
     if not credential_path:
         raise ValueError("credential_path is not provided.")
 
-    credential_json = None
-    with open(credential_path) as f:
-        credential_json = json.load(f)
-
-    storage_client = storage.Client(project=credential_json["project_id"])
+    storage_client = get_storage_client(credential_path)
     bucket = storage_client.bucket(bucket_name)
 
     for local_file_path in local_dir.rglob("*.parquet"):
@@ -57,6 +53,17 @@ def upload_parquet_to_gcs(
 
     if cleanup:
         _cleanup_local_parquets(local_dir)
+
+
+def get_storage_client(credential_path: str) -> storage.Client:
+    if not credential_path:
+        raise ValueError("credential_path is not provided.")
+
+    credential_json = None
+    with open(credential_path) as f:
+        credential_json = json.load(f)
+
+    return storage.Client(project=credential_json["project_id"])
 
 
 def _cleanup_local_parquets(dir_path: Path):

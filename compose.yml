@@ -1,5 +1,7 @@
 services:
   train:
+    env_file:
+      - .env
     depends_on:
       - postgres
       - mlflow
@@ -7,7 +9,8 @@ services:
     command: python -m london_housing_ai.train_main --config src/london_housing_ai/configs/config_dataset2.yaml --csv src/london_housing_ai/data/May-2025-data.csv
     build: .
     volumes:
-      - ./:/app
+      - ./src:/app/src
+      - ./tests:/app/tests
       - ./mlruns:/mlruns
     ports:
       - "8000:8000"
@@ -64,7 +67,8 @@ services:
       PYTHONPATH: /app/src
       MODE: PROD
     volumes:
-      - ./:/app
+      - ./src:/app/src
+      - ./tests:/app/tests
       - ./mlruns:/mlruns
 
 volumes:

@@ -42,6 +42,7 @@ from london_housing_ai.pipeline import (
 from london_housing_ai.utils.checksum import file_sha256
 from london_housing_ai.utils.paths import get_project_root
 from london_housing_ai.utils.logger import get_logger
+from london_housing_ai.experiment_logger import ExperimentLogger
 
 load_dotenv()
 logger = get_logger()
@@ -55,7 +56,7 @@ def main(args: Namespace) -> None:
         )
     mlflow_tracking_uri = os.getenv("MLFLOW_TRACKING_URI", "http://mlflow:5000")
     mlflow.set_tracking_uri(mlflow_tracking_uri)
-    logger.info("Current tracking URI is:", mlflow.get_tracking_uri())
+    logger.info(f"Current tracking URI is: {mlflow.get_tracking_uri()}")
 
     root_path = get_project_root()  # /app
     config_path = root_path / args.config
@@ -139,7 +140,7 @@ def main(args: Namespace) -> None:
 
     # model training
     mlflow.set_experiment("catboost_baseline_experiment")
-    with mlflow.start_run(run_name="catboost_baseline"):
+    with mlflow.start_run(run_name="catboost_baseline") as run:
         train_cfg = load_train_config(config_path)
         trainer = PriceModel(train_cfg)
         trainer.fit(df_with_required_cols(df, train_cfg), checksum)
@@ -148,6 +149,9 @@ def main(args: Namespace) -> None:
         mlflow_catboost.log_model(
             cb_model=trainer.model, artifact_path="catboost_model"
         )
+        experiment_logger = ExperimentLogger(trainer, run)
+        experiment_logger.log_all()
+        logger.info(f"the experiment of model has completed. run_id={run.info.run_id}")
 
 
 if __name__ == "__main__":

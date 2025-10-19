@@ -11,3 +11,4 @@ london_housing_ai.egg-info
 .terraform
 terraform.tfstate*
 terraform.tfvars
+outputs/

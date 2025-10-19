@@ -16,7 +16,7 @@ This project addresses that pain by automating the data ingestion, cleaning, and
 - [x] Write dataframe into parquet files classified by sold_year
 - [x] Store parque files to Google Cloud Storage
 - [ ] Model versioning/registry
-- [ ] Model serving (API)
+- [x] Model serving (API)
 - [ ] Docker/Cloud deployment
 
 ## Setup: docker compose

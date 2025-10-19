@@ -9,8 +9,6 @@ from sqlalchemy import Engine, create_engine, inspect, text
 
 
 def get_engine() -> Engine:
-    # db_name = "postgres" if os.environ["MODE"] == "PROD" else "mypostgres"
-    # host = "postgres" if os.environ["MODE"] == "PROD" else "localhost"
     username = os.getenv("DB_USERNAME", "postgres")
     password = os.getenv("DB_PASSWORD", "password")
     host = os.getenv("DB_HOST", "localhost")
@@ -51,15 +49,17 @@ def _get_table_name_from_date(today_iso: str) -> str:
 
 
 def ensure_checksum_table(engine: Engine) -> None:
-    stmt = """
+    stmt = text(
+        """
     CREATE TABLE IF NOT EXISTS dataset_hashes (
         hash CHAR(64) PRIMARY KEY,
         table_name TEXT,
         inserted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     """
+    )
     with engine.begin() as conn:
-        conn.execute(text(stmt))
+        conn.execute(stmt)
 
 
 def dataset_already_persisted(engine: Engine, checksum: str) -> bool:
