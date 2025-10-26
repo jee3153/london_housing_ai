@@ -27,6 +27,12 @@ docker compose build
 ```
 
 2. run train
+to run train it requires cloud storage to store model artifacts and parquets
+if google cloud storage buckets are not found, run:
+```bash
+gcloud storage buckets create gs://london-housing-ai-artifacts
+gcloud storage buckets create gs://london-housing-ai-data-lake
+```
 runs training, log model to MLflow/artifacts
 ```bash
 docker compose run train
@@ -67,3 +73,48 @@ When you add a new column extracted from features follow this workflow.
 ## Troubleshoot tips
 If you are having failure for second compose up,
 try deleting `/mlruns` directory, and run train again.
+
+## Local terraform deployment
+##### Before everything
+remove any existing buckets
+```bash
+gsutil rm -r gs://london-housing-ai-artifacts
+gsutil rm -r gs://london-housing-ai-data-lake
+```
+
+If buckets already exist:
+```bash
+terraform import google_storage_bucket.data_lake_bucket london-housing-ai-data-lake
+terraform import google_storage_bucket.model_artifacts_bucket london-housing-ai-artifacts
+```
+
+Check whether:
+- `terraform-network` already exists or not
+- `london-housing-db-instance` already exists or not
+- `terraform-instance` already exists or not
+```bash
+gcloud compute networks list
+gcloud sql instances list
+gcloud compute instances list
+```
+
+If exists:
+```bash
+terraform import google_compute_network.vpc_network projects/abiding-sunset-333516/global/networks/terraform-network
+terraform import module.database.google_sql_database_instance.postgres projects/abiding-sunset-333516/instances/london-housing-db-instance
+terraform import google_compute_instance.vm_instance projects/abiding-sunset-333516/zones/us-central1-a/instances/terraform-instance
+```
+
+Verify import success:
+```bash
+terraform state list
+```
+
+Deploy
+```bash
+terraform init
+terraform apply -var-file="terraform.tfvars" -auto-approve
+```
+
+
+

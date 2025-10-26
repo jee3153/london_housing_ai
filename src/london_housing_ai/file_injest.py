@@ -33,7 +33,6 @@ def write_df_to_partitioned_parquet(
 
 def upload_parquet_to_gcs(
     local_dir: Path,
-    bucket_name: str,
     destination_blob_name: str,
     credential_path: str | None,
     cleanup: bool,
@@ -42,6 +41,7 @@ def upload_parquet_to_gcs(
         raise ValueError("credential_path is not provided.")
 
     storage_client = get_storage_client(credential_path)
+    bucket_name = os.getenv("DATA_LAKE_BUCKET_NAME", "london-housing-ai-data-lake")
     bucket = storage_client.bucket(bucket_name)
 
     for local_file_path in local_dir.rglob("*.parquet"):

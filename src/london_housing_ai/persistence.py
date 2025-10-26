@@ -3,9 +3,11 @@ import os
 import re
 import time
 import pandas as pd
-import psycopg2
 from psycopg2.errors import UndefinedTable
 from sqlalchemy import Engine, create_engine, inspect, text
+from london_housing_ai.utils.logger import get_logger
+
+logger = get_logger()
 
 
 def get_engine() -> Engine:
@@ -87,3 +89,17 @@ def record_checksum(
 def table_exists(engine: Engine, table_name: str) -> bool:
     inspector = inspect(engine)
     return inspector.has_table(table_name)
+
+
+def reset_postgres(engine: Engine):
+    recreate = """
+        CREATE TABLE IF NOT EXISTS dataset_hashes (
+            hash TEXT PRIMARY KEY,
+            created_at TIMESTAMP DEFAULT NOW()
+        );
+        """
+    with engine.begin() as conn:
+        conn.execute(text("DROP SCHEMA public CASCADE; CREATE SCHEMA public;"))
+        conn.execute(text(recreate))
+
+    logger.info("DEV_MODE is on, postgres is reset and recreated.")

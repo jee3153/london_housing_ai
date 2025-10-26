@@ -4,7 +4,7 @@ __pycache__/
 catboost_info/
 .vscode
 .env
-abiding-sunset-*.json
+credentials/
 .DS_Store
 london_housing_ai.egg-info
 /data_lake

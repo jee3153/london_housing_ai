@@ -12,9 +12,11 @@ services:
       - ./src:/app/src
       - ./tests:/app/tests
       - ./mlruns:/mlruns
+      - ./credentials:/app/credential
     ports:
       - "8000:8000"
     environment:
+      GOOGLE_APPLICATION_CREDENTIALS: /app/credentials/abiding-sunset-333516-4d51fad53404.json
       MLFLOW_TRACKING_URI: http://mlflow:5000
       POSTGRES_PORT: 5432
       POSTGRES_USER: postgres
@@ -41,16 +43,15 @@ services:
     depends_on:
       - postgres
     environment:
-      MLFLOW_BACKEND_STORE_URI: postgresql://postgres:password@postgres:5432/postgres
-      MLFLOW_DEFAULT_ARTIFACT_ROOT: /mlruns
+      GOOGLE_APPLICATION_CREDENTIALS: /app/credentials/abiding-sunset-333516-4d51fad53404.json
     ports:
       - "5000:5000"
     volumes:
-      - ./mlruns:/mlruns
+      - ./credentials:/app/credentials
     command: >
       mlflow server
         --backend-store-uri postgresql://postgres:password@postgres:5432/postgres     
-        --default-artifact-root /mlruns   
+        --default-artifact-root gs://london-housing-ai-artifacts
         --host 0.0.0.0
         --port 5000
 
@@ -65,7 +66,6 @@ services:
     environment:
       MLFLOW_TRACKING_URI: http://mlflow:5000
       PYTHONPATH: /app/src
-      MODE: PROD
     volumes:
       - ./src:/app/src
       - ./tests:/app/tests
