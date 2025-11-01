@@ -1,7 +1,5 @@
 services:
   train:
-    env_file:
-      - .env
     depends_on:
       - postgres
       - mlflow
@@ -16,13 +14,11 @@ services:
     ports:
       - "8000:8000"
     environment:
-      GOOGLE_APPLICATION_CREDENTIALS: /app/credentials/abiding-sunset-333516-4d51fad53404.json
-      MLFLOW_TRACKING_URI: http://mlflow:5000
-      POSTGRES_PORT: 5432
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      MODE: PROD
-      PYTHONPATH: /app/src
+      - DB_PASSWORD=${DB_PASSWORD}
+      - GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}
+      - MLFLOW_TRACKING_URI=${MLFLOW_TRACKING_URI}
+      - MLFLOW_ARTIFACT_URI=${MLFLOW_ARTIFACT_URI}
+      - DEV_MODE=${DEV_MODE}
 
   postgres:
     image: postgres:16
