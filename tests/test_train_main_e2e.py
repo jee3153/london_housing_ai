@@ -1,15 +1,13 @@
-import datetime
 import os
 import shutil
 import subprocess
-import time
 from pathlib import Path
 
 import pytest
 from sqlalchemy import MetaData
 from testcontainers.postgres import PostgresContainer
 
-from london_housing_ai.persistence import _get_table_name_from_date, get_engine
+from london_housing_ai.persistence import get_engine
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -85,6 +83,7 @@ def test_train_main_e2e(request: pytest.FixtureRequest):
         capture_output=True,
         text=True,
         timeout=120,
+        env=os.environ,
     )
 
     assert result.returncode == 0, f"Train pipeline failed:\n{result.stderr}"

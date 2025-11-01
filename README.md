@@ -62,7 +62,7 @@ mlflow server \
 ## Running test
 ⚠️ Ensure to locate in root path before running:
 ```bash
-pytest
+poetry run pytest -s -v
 ```
 
 ## Feature Extraction Workflow

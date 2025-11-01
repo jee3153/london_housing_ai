@@ -1,5 +1,3 @@
-import tempfile
-
 import mlflow
 import pandas as pd
 from mlflow.tracking import MlflowClient
