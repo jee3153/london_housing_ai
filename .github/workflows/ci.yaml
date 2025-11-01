@@ -88,6 +88,3 @@ jobs:
         run: |
           gsutil rm gs://london-housing-ai-data-lake/**
           gsutil rm gs://london-housing-ai-artifacts/**
-
-  docker-deploy:
-    runs-on: ubuntu-latest

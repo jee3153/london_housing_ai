@@ -12,3 +12,4 @@ london_housing_ai.egg-info
 terraform.tfstate*
 terraform.tfvars
 outputs/
+terraform/.terraform.tfstate.lock.info
