@@ -82,6 +82,7 @@ jobs:
         id: tf
         run: |
           echo "MLFLOW_ARTIFACT_URI=$(terraform output -raw model_artifacts_bucket_url)" >> $GITHUB_ENV
+          echo "MLFLOW_TRACKING_URI"=$(terraform output -raw mlflow_internal_ip)" >> $GITHUB_ENV
       - name: clean up GCP credentials
         if: always()
         run: |

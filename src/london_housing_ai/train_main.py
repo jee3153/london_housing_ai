@@ -143,6 +143,8 @@ def main(args: Namespace) -> None:
     mlflow.set_registry_uri(
         os.getenv("MLFLOW_ARTIFACT_URI", "gs://london-housing-ai-artifacts")
     )
+
+    # start logging metadata as you train a model
     with mlflow.start_run(run_name="london_housing_run") as run:
         train_cfg = load_train_config(config_path)
         training_df = df_with_required_cols(df, train_cfg)

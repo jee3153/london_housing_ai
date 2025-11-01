@@ -13,26 +13,8 @@ provider "google" {
   zone    = var.zone
 }
 
-resource "google_compute_network" "vpc_network" {
-  name = "terraform-network"
-}
-
-resource "google_compute_instance" "vm_instance" {
-  name         = "terraform-instance"
-  machine_type = "f1-micro"
-  tags         = ["web", "dev"]
-
-  boot_disk {
-    initialize_params {
-      image = "cos-cloud/cos-stable"
-    }
-  }
-
-  network_interface {
-    network = google_compute_network.vpc_network.name
-    access_config { # gives VM an external IP address, even without any arguments in the block.
-    }
-  }
+module "network" {
+  source = "./modules/network"
 }
 
 module "database" {
@@ -42,6 +24,14 @@ module "database" {
 }
 
 module "storage" {
-  source = "./modules/storage"
+  source     = "./modules/storage"
   project_id = var.project_id
+}
+
+module "mlflow" {
+  source             = "./modules/mlflow"
+  db_private_ip      = module.database.db_private_ip
+  db_password        = var.db_password
+  project_id         = var.project_id
+  network_private_ip = module.network.network_id
 }
