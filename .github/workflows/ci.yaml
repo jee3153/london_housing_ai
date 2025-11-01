@@ -44,7 +44,7 @@ jobs:
 
       - name: Test with pytest
         run: |
-          poetry run pytest -v -m "gcs"
+          poetry run pytest -v -m "not gcs"
           echo "::notice::All pytest passed"
 
   docker-build:
@@ -79,8 +79,10 @@ jobs:
           gsutil rm gs://london-housing-ai-artifacts/**
 
       # WIP
-      # - name: get terraform outputs
-      #   id: tf
-      #   run: |
-      #     echo "MLFLOW_ARTIFACT_URI=$(terraform output -raw model_artifacts_bucket_url)" >> $GITHUB_ENV
-      #     echo "MLFLOW_TRACKING_URI"=$(terraform output -raw mlflow_internal_ip)" >> $GITHUB_ENV
+      # - name: set environment variables
+      # run: |
+      #   echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> $GITHUB_ENV
+      #   echo "MLFLOW_TRACKING_URI=$(terraform output -raw mlflow_internal_ip)" >> $GITHUB_ENV
+      #   echo "MLFLOW_ARTIFACT_URI=$(terraform output -raw model_artifacts_bucket_url)" >> $GITHUB_ENV
+      #   echo "DEV_MODE=false" >> $GITHUB_ENV
+      # TODO: after terraform deployment, run poetry run pytest -v -m "gcs"
