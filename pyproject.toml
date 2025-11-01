@@ -165,6 +165,7 @@ yarl = "1.20.1"
 zipp = "3.23.0"
 testcontainers = { extras = ["postgres"], version = "^4.13.1" }
 flake8 = "^7.3.0"
+mypy = "^1.18.2"
 
 
 [tool.pytest.ini_options]
