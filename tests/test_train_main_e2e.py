@@ -2,6 +2,7 @@ import os
 import shutil
 import subprocess
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 from sqlalchemy import MetaData
@@ -62,13 +63,16 @@ def cleanup(request: pytest.FixtureRequest):
     request.addfinalizer(remove_data_lake)
 
 
+@pytest.mark.gcs
 def test_train_main_e2e(request: pytest.FixtureRequest):
-
     root = Path(request.config.rootpath)
     config_file = (
         root / "src" / "london_housing_ai" / "configs" / "config_dataset2.yaml"
     )
     csv_file = root / "tests" / "fixtures" / "sample_housing.csv"
+
+    env = os.environ
+    env["PYTHONPATH"] = str(Path(request.config.rootpath) / "src")
 
     result = subprocess.run(
         [
@@ -83,8 +87,43 @@ def test_train_main_e2e(request: pytest.FixtureRequest):
         capture_output=True,
         text=True,
         timeout=120,
-        env=os.environ,
+        env=env,
     )
 
     assert result.returncode == 0, f"Train pipeline failed:\n{result.stderr}"
+    assert "the experiment of model has completed." in result.stdout
+
+
+def test_train_main_e2e_local(request):
+    # Skip real GCS upload
+    with patch("london_housing_ai.file_injest.upload_parquet_to_gcs") as mock_upload:
+        mock_upload.return_value = None
+
+        root = Path(request.config.rootpath)
+        config_file = (
+            root / "src" / "london_housing_ai" / "configs" / "config_dataset2.yaml"
+        )
+        csv_file = root / "tests" / "fixtures" / "sample_housing.csv"
+
+        env = os.environ
+        env["PYTHONPATH"] = str(Path(request.config.rootpath) / "src")
+
+        # now run the real training entry point
+        result = subprocess.run(
+            [
+                "python",
+                "-m",
+                "london_housing_ai.train_main",
+                "--config",
+                config_file,
+                "--csv",
+                csv_file,
+            ],
+            capture_output=True,
+            text=True,
+            timeout=120,
+            env=env,
+        )
+
+    assert result.returncode == 0
     assert "the experiment of model has completed." in result.stdout

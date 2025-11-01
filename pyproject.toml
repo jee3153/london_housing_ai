@@ -176,7 +176,7 @@ testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py"]
 python_functions = ["test_*"]
 addopts = "--tb=short --strict-markers"
-env = ["PYTHONPATH=src"]
+markers = ["gcs: marks tests that require Google Cloud Storage access"]
 
 [tool.black]
 line-length = 88

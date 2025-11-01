@@ -39,7 +39,8 @@ def upload_parquet_to_gcs(
     cleanup: bool,
 ) -> None:
     if not credential_path:
-        raise ValueError("credential_path is not provided.")
+        logger.warning("No GCP credentials found; skipping upload.")
+        return
 
     storage_client = get_storage_client(credential_path)
     bucket_name = os.getenv("DATA_LAKE_BUCKET_NAME", "london-housing-ai-data-lake")
