@@ -1,8 +1,8 @@
+from pathlib import Path
 from typing import Any, Tuple
 
 import numpy as np
 import pandas as pd
-from pathlib import Path
 from catboost import CatBoostRegressor
 from numpy.typing import NDArray
 from sklearn.metrics import root_mean_squared_error
@@ -26,7 +26,7 @@ class PriceModel:
             "random_seed": cfg.random_state,
         }
         self.model = CatBoostRegressor(**params)
-        self.log_data = {
+        self.log_data: dict[str, Any] = {
             "params": params,
             "artifacts": [],
             "metrics": {},

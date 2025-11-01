@@ -2,9 +2,11 @@ import datetime
 import os
 import re
 import time
+
 import pandas as pd
 from psycopg2.errors import UndefinedTable
 from sqlalchemy import Engine, create_engine, inspect, text
+
 from london_housing_ai.utils.logger import get_logger
 
 logger = get_logger()

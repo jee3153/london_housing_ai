@@ -1,13 +1,15 @@
-import subprocess
-import os
-from pathlib import Path
-import pytest
-from testcontainers.postgres import PostgresContainer
-from london_housing_ai.persistence import get_engine, _get_table_name_from_date
 import datetime
-import time
-from sqlalchemy import MetaData
+import os
 import shutil
+import subprocess
+import time
+from pathlib import Path
+
+import pytest
+from sqlalchemy import MetaData
+from testcontainers.postgres import PostgresContainer
+
+from london_housing_ai.persistence import _get_table_name_from_date, get_engine
 
 
 @pytest.fixture(scope="module", autouse=True)

@@ -1,10 +1,11 @@
 from pathlib import Path
-from london_housing_ai.utils.logger import get_logger
-from london_housing_ai.models import PriceModel
+from typing import List, Optional
+
 import mlflow
 from mlflow.tracking.fluent import ActiveRun
 
-from typing import Optional, List
+from london_housing_ai.models import PriceModel
+from london_housing_ai.utils.logger import get_logger
 
 logger = get_logger()
 

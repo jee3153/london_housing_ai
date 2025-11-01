@@ -8,6 +8,7 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 from google.cloud import storage
+
 from london_housing_ai.utils.logger import get_logger
 
 logger = get_logger()

@@ -1,10 +1,12 @@
 import tempfile
+
 import mlflow
-from mlflow.tracking import MlflowClient
 import pandas as pd
-from london_housing_ai.models import PriceModel
-from london_housing_ai.experiment_logger import ExperimentLogger
+from mlflow.tracking import MlflowClient
+
 from london_housing_ai.config_schemas.TrainConfig import TrainConfig
+from london_housing_ai.experiment_logger import ExperimentLogger
+from london_housing_ai.models import PriceModel
 
 
 def test_mlflow_logging_end_to_end(tmp_path):

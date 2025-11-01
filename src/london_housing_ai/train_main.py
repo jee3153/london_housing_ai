@@ -10,6 +10,7 @@ import mlflow.catboost as mlflow_catboost
 from dotenv import load_dotenv
 
 from london_housing_ai.augmenters import add_floor_area
+from london_housing_ai.experiment_logger import ExperimentLogger
 from london_housing_ai.file_injest import (
     upload_parquet_to_gcs,
     write_df_to_partitioned_parquet,
@@ -31,8 +32,8 @@ from london_housing_ai.persistence import (
     get_engine,
     persist_dataset,
     record_checksum,
-    table_exists,
     reset_postgres,
+    table_exists,
 )
 from london_housing_ai.pipeline import (
     clean_dataset,
@@ -40,9 +41,8 @@ from london_housing_ai.pipeline import (
     feature_engineer_dataset,
 )
 from london_housing_ai.utils.checksum import file_sha256
-from london_housing_ai.utils.paths import get_project_root
 from london_housing_ai.utils.logger import get_logger
-from london_housing_ai.experiment_logger import ExperimentLogger
+from london_housing_ai.utils.paths import get_project_root
 
 load_dotenv()
 logger = get_logger()

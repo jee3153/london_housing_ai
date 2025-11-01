@@ -4,6 +4,7 @@ from typing import Dict, List, Optional
 import aiohttp
 import async_timeout
 import pandas as pd
+
 from london_housing_ai.utils.logger import get_logger
 
 POSTCODE_URL = "https://api.postcodes.io/postcodes"

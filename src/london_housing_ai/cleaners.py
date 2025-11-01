@@ -2,6 +2,7 @@ from typing import Dict, List
 
 import pandas as pd
 from pandas import DataFrame, Series
+
 from london_housing_ai.utils.logger import get_logger
 
 POSTCODE_CLEAN = "postcode_clean"

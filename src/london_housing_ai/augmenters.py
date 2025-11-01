@@ -2,6 +2,7 @@ from typing import Literal
 
 import pandas as pd
 from pandas import DataFrame
+
 from london_housing_ai.utils.logger import get_logger
 
 logger = get_logger()
