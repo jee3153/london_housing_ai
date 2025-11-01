@@ -4,7 +4,6 @@ import datetime
 import os
 import time
 from argparse import Namespace
-from pathlib import Path
 
 import mlflow
 import mlflow.catboost as mlflow_catboost

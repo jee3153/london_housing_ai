@@ -1,4 +1,3 @@
-from typing import Optional
 from pandas import DataFrame
 
 from london_housing_ai.cleaners import (

@@ -77,6 +77,11 @@ jobs:
           docker compose run -e GOOGLE_APPLICATION_CREDENTIALS=/secrets/gcp-key.json \
           -v $HOME/gcp-key.json:/secrets/gcp-key.json \
           train
+      - name: clean up GCP credentials
+        if: always()
+        run: |
+          gsutil rm gs://london-housing-ai-data-lake/**
+          gsutil rm gs://london-housing-ai-artifacts/**
 
       # WIP
       # - name: get terraform outputs
@@ -84,8 +89,3 @@ jobs:
       #   run: |
       #     echo "MLFLOW_ARTIFACT_URI=$(terraform output -raw model_artifacts_bucket_url)" >> $GITHUB_ENV
       #     echo "MLFLOW_TRACKING_URI"=$(terraform output -raw mlflow_internal_ip)" >> $GITHUB_ENV
-      # - name: clean up GCP credentials
-      #   if: always()
-      #   run: |
-      #     gsutil rm gs://london-housing-ai-data-lake/**
-      #     gsutil rm gs://london-housing-ai-artifacts/**
