@@ -177,9 +177,17 @@ jobs:
       - name: Terraform destroy
         if: ${{ steps.export.conclusion == 'success' }}
         timeout-minutes: 10
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/gcp-key.json
         run: |
-          export TF_LOG=DEBUG
+          set -e
           echo "🧹 Cleaning up Terraform resources..."
+
+          gcloud auth activate-service-account --key-file="$GOOGLE_APPLICATION_CREDENTIALS"
+          gcloud config set project ${{ env.PROJECT_ID }}
+
+          export TF_LOG=DEBUG
+
           terraform -chdir=terraform destroy -auto-approve \
           -var="mlflow_image_uri=${{ needs.image-build.outputs.mlflow_image_uri }}" \
           -var="project_id=${{ env.PROJECT_ID }}"
