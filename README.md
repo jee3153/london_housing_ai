@@ -122,6 +122,15 @@ Expose mlflow tracking uri
 export MLFLOW_TRACKING_URI=$(terraform output -raw mlflow_tracking_uri)
 ```
 
+Manual clean up
+```bash
+gcloud iam service-accounts delete mlflow-sa@abiding-sunset-333516.iam.gserviceaccount.com --quiet
+gcloud sql instances delete london-housing-db-instance
+gcloud storage rm -r gs://london-housing-ai-artifacts
+gcloud storage rm -r gs://london-housing-ai-data-lake
+gcloud compute networks delete london-housing-vpc
+```
+
 ## Progress
 🧩 Recap: What you already have
 
