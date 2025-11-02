@@ -15,14 +15,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Python 3.12
         uses: actions/setup-python@v3
         with:
           python-version: "3.12"
-      - name: Install Poetry
-        run: |
-          curl -sSL https://install.python-poetry.org | python3 -
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
       - name: Cache Poetry dependencies
         uses: actions/cache@v4
         with:
@@ -30,8 +28,14 @@ jobs:
           key: poetry-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
           restore-keys: poetry-${{ runner.os }}-
 
+      - name: Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
       - name: Install dependencies
         run: poetry install --no-interaction --no-root --with dev
+
       - name: Lint and format
         run: |
           poetry run mypy src
@@ -47,6 +51,7 @@ jobs:
           # exit-zero treats all errors as warnings
           poetry run flake8 src --count --exit-zero --max-complexity=10 --max-line-length=136 --statistics
           echo "::notice::No linting issues found"
+
       - name: Unit & Integration tests
         run: |
           poetry run pytest -v -m "not gcs"
@@ -60,6 +65,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - id: build
+
         name: Build and push MLflow image
         run: |
           SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
@@ -82,6 +88,12 @@ jobs:
       mlflow_artifact_uri: ${{ steps.export.outputs.mlflow_artifact_uri }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install gcloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+
       - name: Set up GCP credentials
         run: |
           cat <<EOF > $HOME/gcp-key.json
@@ -98,13 +110,28 @@ jobs:
           gcloud auth list
           gcloud config list project
           echo "::endgroup"
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.8
+
+      - name: Cache Terraform plugins
+        uses: actions/cache@v4
+        with:
+          path: ~/.terraform.d/plugin-cache
+          key: terraform-${{ runner.os }}-${{ hashFiles('terraform/**/*.tf') }}
+          restore-keys: terraform-${{ runner.os }}-
+
       - name: Terraform apply
         id: export
         run: |
+          export TF_PLUGIN_CACHE_DIR="$HOME/.terraform.d/plugin-cache"
+
           terraform -chdir=terraform init
           terraform -chdir=terraform apply -auto-approve \
           -var="mlflow_image_uri=${{ needs.image-build.outputs.mlflow_image_uri }}"
-          echo "Currently deployed MLflow image: ${{ needs.image-build.outputs.mlflow_image_uri }}""
+          echo "Currently deployed MLflow image: ${{ needs.image-build.outputs.mlflow_image_uri }}"
 
           # export all outputs dynamically
           terraform -chdir=terraform output -json | \
@@ -113,26 +140,48 @@ jobs:
   e2etests:
     runs-on: ubuntu-latest
     needs: terraform-deployment
-    environment: ENV
+    environment: CREDENTIALS
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install Poetry
-        run: |
-          curl -sSL https://install.python-poetry.org | python3 -
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
       - name: Cache Poetry dependencies
         uses: actions/cache@v4
         with:
           path: ~/.cache/pypoetry
           key: poetry-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
           restore-keys: poetry-${{ runner.os }}-
+
+      - name: Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          poetry install --no-interaction --no-root
+
+      - name: Set up GCP credentials
+        run: |
+          cat <<EOF > $HOME/gcp-key.json
+          ${{ secrets.GCP_CREDENTIALS_JSON }}
+          EOF
+          export GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcp-key.json
+          gcloud auth activate-service-account --key-file=$HOME/gcp-key.json
+
+          PROJECT_ID=$(jq -r '.project_id' $HOME/gcp-key.json)
+          gcloud config set project $PROJECT_ID
+
+          echo "PROJECT_ID=$PROJECT_ID" >> $GITHUB_ENV
+          echo "::group::Verifying GCP authentication"
+          gcloud auth list
+          gcloud config list project
+          echo "::endgroup"
+
       - name: Test with pytest
         env:
-          GOOGLE_APPLICATION_CREDENTIAL: $HOME/gcp-key.json
+          GOOGLE_APPLICATION_CREDENTIALS: $HOME/gcp-key.json
           DB_CONNECTION_URL: ${{ needs.terraform-deployment.outputs.db_connection_url }}
           MLFLOW_TRACKING_URI: ${{ needs.terraform-deployment.outputs.mlflow_tracking_uri }}
           MLFLOW_ARTIFACT_URI: ${{ needs.terraform-deployment.outputs.mlflow_artifact_uri }}
@@ -143,9 +192,26 @@ jobs:
   clean-up:
     runs-on: ubuntu-latest
     needs: e2etests
+    environment: CREDENTIALS
+    if: always()
     steps:
       - uses: actions/checkout@v4
+
+      - name: Set up GCP credentials
+        run: |
+          cat <<EOF > $HOME/gcp-key.json
+            ${{ secrets.GCP_CREDENTIALS_JSON }}
+            EOF
+          export GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcp-key.json
+          gcloud auth activate-service-account --key-file=$HOME/gcp-key.json
+          PROJECT_ID=$(jq -r '.project_id' $HOME/gcp-key.json)
+          gcloud config set project $PROJECT_ID
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.8
+
       - name: Terraform destroy
-        if: always()
         run: |
           terraform -chdir=terraform destroy -auto-approve
