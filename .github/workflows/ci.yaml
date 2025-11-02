@@ -125,12 +125,17 @@ jobs:
 
       - name: Terraform apply
         id: export
+        timeout-minutes: 25
         run: |
+          mkdir -p "$HOME/.terraform.d/plugin-cache"
           export TF_PLUGIN_CACHE_DIR="$HOME/.terraform.d/plugin-cache"
+          export TF_LOG=INFO
 
           terraform -chdir=terraform init
           terraform -chdir=terraform apply -auto-approve \
-          -var="mlflow_image_uri=${{ needs.image-build.outputs.mlflow_image_uri }}"
+            -var="mlflow_image_uri=${{ needs.image-build.outputs.mlflow_image_uri }}" \
+            -no-color | tee terraform-apply.log
+
           echo "Currently deployed MLflow image: ${{ needs.image-build.outputs.mlflow_image_uri }}"
 
           # export all outputs dynamically
