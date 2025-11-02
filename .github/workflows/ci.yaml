@@ -115,10 +115,14 @@ jobs:
       - name: Set up GCP credentials
         run: |
           echo '${{ secrets.GCP_CREDENTIALS_JSON }}' > $GITHUB_WORKSPACE/gcp-key.json
-          export GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcp-key.json
-          gcloud auth activate-service-account --key-file=$HOME/gcp-key.json
+          export GOOGLE_APPLICATION_CREDENTIALS=$GITHUB_WORKSPACE/gcp-key.json
 
-          PROJECT_ID=$(jq -r '.project_id' $HOME/gcp-key.json)
+          ls -l $GITHUB_WORKSPACE/gcp-key.json
+          head -n 5 $GITHUB_WORKSPACE/gcp-key.json
+
+          gcloud auth activate-service-account --key-file=$GITHUB_WORKSPACE/gcp-key.json
+
+          PROJECT_ID=$(jq -r '.project_id' $GITHUB_WORKSPACE/gcp-key.json)
           gcloud config set project $PROJECT_ID
 
           echo "PROJECT_ID=$PROJECT_ID" >> $GITHUB_ENV
