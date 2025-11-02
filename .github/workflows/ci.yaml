@@ -152,6 +152,7 @@ jobs:
           terraform -chdir=terraform init -reconfigure -input=false
           stdbuf -oL -eL terraform -chdir=terraform apply -auto-approve \
           -var="mlflow_image_uri=${{ needs.image-build.outputs.mlflow_image_uri }}" \
+          -var="project_id=${{ env.PROJECT_ID }}"
           -no-color | tee terraform-apply.log
 
           echo "Currently deployed MLflow image: ${{ needs.image-build.outputs.mlflow_image_uri }}"
