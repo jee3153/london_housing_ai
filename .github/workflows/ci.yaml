@@ -144,6 +144,8 @@ jobs:
       - name: Terraform apply
         id: export
         timeout-minutes: 25
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: $HOME/gcp-key.json
         run: |
           mkdir -p "$HOME/.terraform.d/plugin-cache"
           export TF_PLUGIN_CACHE_DIR="$HOME/.terraform.d/plugin-cache"
