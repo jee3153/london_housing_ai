@@ -13,6 +13,9 @@ logger = get_logger()
 
 
 def get_engine() -> Engine:
+    db_url = os.getenv("DB_CONNECTION_URL")
+    if db_url:
+        return create_engine(db_url)
     username = os.getenv("DB_USERNAME", "postgres")
     password = os.getenv("DB_PASSWORD", "password")
     host = os.getenv("DB_HOST", "localhost")

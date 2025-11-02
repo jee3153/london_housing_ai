@@ -20,6 +20,7 @@ module "network" {
 module "database" {
   source      = "./modules/database"
   region      = var.region
+  db_name     = var.db_name
   db_password = var.db_password
 }
 
@@ -34,4 +35,5 @@ module "mlflow" {
   db_password        = var.db_password
   project_id         = var.project_id
   network_private_ip = module.network.network_id
+  mlflow_image_uri   = var.mlflow_image_uri
 }

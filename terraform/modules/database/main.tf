@@ -14,7 +14,7 @@ resource "google_sql_database_instance" "postgres" {
 }
 
 resource "google_sql_database" "database" {
-  name     = "london-housing-db"
+  name     = var.db_name
   instance = google_sql_database_instance.postgres.name
 }
 

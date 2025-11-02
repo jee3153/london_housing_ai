@@ -42,7 +42,7 @@ resource "google_compute_instance" "mlflow_server" {
         spec:
             containers:
                 - name: mlflow
-                image: "ghcr.io/mlflow/mlflow:latest"
+                image: "${var.mlflow_image_uri}"
                 args:
                     - "server"
                     - "--backend-store-uri"

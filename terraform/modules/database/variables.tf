@@ -15,5 +15,5 @@ variable "db_password" {
 
 variable "db_name" {
   type    = string
-  default = "london-housing"
+  default = "london-housing-db"
 }

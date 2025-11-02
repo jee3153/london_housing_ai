@@ -19,3 +19,7 @@ variable "db_private_ip" {
 variable "network_private_ip" {
   type = string
 }
+
+variable "mlflow_image_uri" {
+  type = string
+}
