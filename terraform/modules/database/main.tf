@@ -26,4 +26,7 @@ resource "google_sql_user" "users" {
   name     = var.db_user
   instance = google_sql_database_instance.postgres.name
   password = var.db_password
+  lifecycle {
+    prevent_destroy = true
+  }
 }
