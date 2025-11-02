@@ -147,12 +147,12 @@ jobs:
         run: |
           mkdir -p "$HOME/.terraform.d/plugin-cache"
           export TF_PLUGIN_CACHE_DIR="$HOME/.terraform.d/plugin-cache"
-          export TF_LOG=INFO
+          export TF_LOG=DEBUG
 
           terraform -chdir=terraform init -reconfigure -input=false
-          script -q -e -c 'terraform -chdir=terraform apply -auto-approve \
-            -var="mlflow_image_uri=${{ needs.image-build.outputs.mlflow_image_uri }}" \
-            -no-color' | tee terraform-apply.log
+          stdbuf -oL -eL terraform -chdir=terraform apply -auto-approve \
+          -var="mlflow_image_uri=${{ needs.image-build.outputs.mlflow_image_uri }}" \
+          -no-color | tee terraform-apply.log
 
           echo "Currently deployed MLflow image: ${{ needs.image-build.outputs.mlflow_image_uri }}"
 
