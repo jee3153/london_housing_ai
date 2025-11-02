@@ -175,7 +175,7 @@ jobs:
           echo "::notice::All deployment pytest passed"
 
       - name: Terraform destroy
-        if: ${{ success() }} # runs only if apply ran
+        if: ${{ steps.export.conclusion == 'success' }}
         timeout-minutes: 10
         run: |
           echo "🧹 Cleaning up Terraform resources..."

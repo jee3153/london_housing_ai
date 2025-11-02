@@ -8,7 +8,11 @@ resource "google_sql_database_instance" "postgres" {
     tier = "db-f1-micro"
     ip_configuration {
       ipv4_enabled = true
-      ssl_mode     = "ALLOW_UNENCRYPTED_AND_ENCRYPTED"
+
+      authorized_networks {
+        name  = "github-ci"
+        value = "0.0.0.0/0" # ⚠️ temporary; open to all
+      }
     }
   }
 }

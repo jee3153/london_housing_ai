@@ -129,6 +129,7 @@ gcloud compute instances delete mlflow-instance --zone=us-central1-a --quiet
 gcloud sql instances delete london-housing-db-instance
 gcloud storage rm -r gs://london-housing-ai-artifacts
 gcloud storage rm -r gs://london-housing-ai-data-lake
+gcloud compute networks subnets delete london-housing-vpc --region=us-central1 --quiet
 gcloud compute networks delete london-housing-vpc
 ```
 
