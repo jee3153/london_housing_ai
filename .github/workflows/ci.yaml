@@ -83,7 +83,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Set up GCP credentials
         run: |
-          echo '${{ secrets.GCP_CREDENTIALS_JSON }}' > $HOME/gcp-key.json
+          echo "${{ secrets.GCP_CREDENTIALS_JSON }}" > $HOME/gcp-key.json
           export GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcp-key.json
           gcloud auth activate-service-account --key-file=$HOME/gcp-key.json
 
