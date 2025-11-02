@@ -175,9 +175,11 @@ jobs:
           echo "::notice::All deployment pytest passed"
 
       - name: Terraform destroy
-        if: always()
+        if: ${{ success() }} # runs only if apply ran
+        timeout-minutes: 10
         run: |
-          terraform -chdir=terraform destroy -auto-approve
+          echo "🧹 Cleaning up Terraform resources..."
+          terraform -chdir=terraform destroy -auto-approve || echo "⚠️ Destroy failed or partially cleaned up"
 
       - name: Verify cleanup
         if: always()

@@ -95,6 +95,7 @@ Check whether:
 ```bash
 gcloud compute networks list
 gcloud sql instances list
+gcloud storage buckets list
 gcloud compute instances list
 ```
 
