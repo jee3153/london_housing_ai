@@ -178,8 +178,12 @@ jobs:
         if: ${{ steps.export.conclusion == 'success' }}
         timeout-minutes: 10
         run: |
+          export TF_LOG=DEBUG
           echo "🧹 Cleaning up Terraform resources..."
-          terraform -chdir=terraform destroy -auto-approve || echo "⚠️ Destroy failed or partially cleaned up"
+          terraform -chdir=terraform destroy -auto-approve \
+          -var="mlflow_image_uri=${{ needs.image-build.outputs.mlflow_image_uri }}" \
+          -var="project_id=${{ env.PROJECT_ID }}"
+          -no-color | tee terraform-apply.log || echo "⚠️ Destroy failed or partially cleaned up"
 
       - name: Verify cleanup
         if: always()
