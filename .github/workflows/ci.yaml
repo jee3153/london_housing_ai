@@ -114,9 +114,7 @@ jobs:
 
       - name: Set up GCP credentials
         run: |
-          cat <<EOF > $HOME/gcp-key.json
-          ${{ secrets.GCP_CREDENTIALS_JSON }}
-          EOF
+          echo '${{ secrets.GCP_CREDENTIALS_JSON }}' > $HOME/gcp-key.json
           export GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcp-key.json
           gcloud auth activate-service-account --key-file=$HOME/gcp-key.json
 
