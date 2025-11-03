@@ -167,6 +167,7 @@ jobs:
           stdbuf -oL -eL terraform -chdir=terraform apply -auto-approve \
           -var="mlflow_image_uri=${{ needs.image-build.outputs.mlflow_image_uri }}" \
           -var="project_id=${{ env.PROJECT_ID }}" \
+          -var="db_user=${{ env.PROJECT_ID }}-user" \
           -no-color | tee terraform-apply.log
 
           echo "Currently deployed MLflow image: ${{ needs.image-build.outputs.mlflow_image_uri }}"
@@ -201,7 +202,8 @@ jobs:
 
           terraform -chdir=terraform destroy -auto-approve \
           -var="mlflow_image_uri=${{ needs.image-build.outputs.mlflow_image_uri }}" \
-          -var="project_id=${{ env.PROJECT_ID }}"
+          -var="project_id=${{ env.PROJECT_ID }}" \
+          -var="db_user=${{ env.PROJECT_ID }}-user" \
           -no-color | tee terraform-apply.log || echo "⚠️ Destroy failed or partially cleaned up"
 
       - name: Verify cleanup

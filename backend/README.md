@@ -18,7 +18,7 @@ This project addresses that pain by automating the data ingestion, cleaning, and
 - [ ] Model versioning/registry
 - [x] Model serving (API)
 - [x] Docker/Cloud deployment
-- [ ] Dashboard for ingest and training
+- [ ] Dashboard for data validation and model interpretability
 
 ## Setup: docker compose
 1. compose up all components.
