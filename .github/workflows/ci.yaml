@@ -62,6 +62,9 @@ jobs:
 
   image-build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
     needs: lint-format-check
     outputs:
       mlflow_image_uri: ${{ steps.build.outputs.image_uri }}
@@ -83,6 +86,9 @@ jobs:
 
   terraform-deployment:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
     needs: image-build
     environment: CREDENTIALS
     outputs:
