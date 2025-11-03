@@ -17,7 +17,8 @@ This project addresses that pain by automating the data ingestion, cleaning, and
 - [x] Store parque files to Google Cloud Storage
 - [ ] Model versioning/registry
 - [x] Model serving (API)
-- [ ] Docker/Cloud deployment
+- [x] Docker/Cloud deployment
+- [ ] Dashboard for ingest and training
 
 ## Setup: docker compose
 1. compose up all components.
