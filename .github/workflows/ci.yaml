@@ -86,9 +86,6 @@ jobs:
 
   terraform-deployment:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
     needs: image-build
     environment: CREDENTIALS
     outputs:
