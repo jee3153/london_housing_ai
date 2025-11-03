@@ -13,6 +13,9 @@ permissions:
 jobs:
   lint-format-check:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
     steps:
       - uses: actions/checkout@v4
 
