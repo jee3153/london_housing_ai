@@ -23,7 +23,7 @@ services:
   postgres:
     image: postgres:16
     environment:
-      POSTGRES_USER: postgres
+      POSTGRES_USER: dbuser
       POSTGRES_PASSWORD: password
       POSTGRES_DB: postgres
     ports:
@@ -39,7 +39,7 @@ services:
     depends_on:
       - postgres
     environment:
-      GOOGLE_APPLICATION_CREDENTIALS: /app/credentials/abiding-sunset-333516-4d51fad53404.json
+      GOOGLE_APPLICATION_CREDENTIALS: /app/credentials/service-account.json
     ports:
       - "5000:5000"
     volumes:

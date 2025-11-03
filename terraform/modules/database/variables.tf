@@ -5,7 +5,7 @@ variable "region" {
 
 variable "db_user" {
   type    = string
-  default = "postgres"
+  default = "dbuser"
 }
 
 variable "db_password" {
