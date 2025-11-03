@@ -3,7 +3,10 @@ from typing import Dict, List
 import pandas as pd
 from pandas import DataFrame, Series
 
+from london_housing_ai.utils.logger import get_logger
+
 POSTCODE_CLEAN = "postcode_clean"
+logger = get_logger()
 
 
 def canon_postcode(series: Series) -> Series:
@@ -45,5 +48,5 @@ def rename_column(df: DataFrame, col_from: str, col_to: str) -> DataFrame:
     try:
         return df.rename(columns={col_from: col_to}, errors="raise").copy()
     except KeyError as e:
-        print(f"Rename failed because {e}")
+        logger.info(f"Rename failed because {e}")
         return df

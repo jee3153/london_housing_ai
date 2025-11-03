@@ -1,13 +1,15 @@
-from pandas import Series, DataFrame
-from pandas.testing import assert_series_equal, assert_frame_equal
+from math import floor
+
+from pandas import DataFrame, Series
+from pandas.testing import assert_frame_equal, assert_series_equal
+
 from london_housing_ai.cleaners import (
     canon_postcode,
-    numeric_cast,
-    normalise_postcodes,
     clip_upper_bound,
     drop_na,
+    normalise_postcodes,
+    numeric_cast,
 )
-from math import floor
 
 
 def test_canon():

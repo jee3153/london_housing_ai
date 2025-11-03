@@ -5,6 +5,8 @@ import aiohttp
 import async_timeout
 import pandas as pd
 
+from london_housing_ai.utils.logger import get_logger
+
 POSTCODE_URL = "https://api.postcodes.io/postcodes"
 MAX_PER_REQ = 100
 MAX_CONCURRENCY = 10
@@ -14,6 +16,7 @@ BACKOFF_FACTOR = 2
 
 # create concurrent async coroutine
 _sem = asyncio.Semaphore(MAX_CONCURRENCY)
+logger = get_logger()
 
 
 async def get_district_from_postcode(
@@ -36,7 +39,9 @@ async def get_district_from_postcode(
     df = df.loc[~df[postcode_col].isin(failed), :].copy()
     df.loc[:, district_col] = df[postcode_col].map(postcode_to_district_map)
 
-    print(f"getting district from postcodes is complete. failed queries: {failed}")
+    logger.info(
+        f"getting district from postcodes is complete. failed queries: {failed}"
+    )
     return df
 
 
@@ -96,7 +101,7 @@ async def _fetch_districts_with_retries(
         resolved = await _one_round(session, list(todo), batch_size)
         done.update(resolved)
         todo.difference_update(done.keys())
-        print(f"[attempt {attempt}] todo={len(todo)} resolved={len(done)}")
+        logger.info(f"[attempt {attempt}] todo={len(todo)} resolved={len(done)}")
 
         # back-off only if there is still work to do
         if todo:
@@ -109,7 +114,7 @@ async def _one_round(
     session: aiohttp.ClientSession, todo: List[str], batch_size: int
 ) -> Dict[str, str]:
     chunks = _chunk(todo, batch_size)
-    print(f"wave: {len(chunks)} chunks of <=100")
+    logger.info(f"wave: {len(chunks)} chunks of <=100")
 
     tasks = []
     async with asyncio.TaskGroup() as task_group:

@@ -2,81 +2,201 @@ name: London Housing AI CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 permissions:
-    contents: read
-  
-jobs:
-  test:
-    runs-on: ubuntu-latest
+  contents: read
+  packages: write
 
+jobs:
+  lint-format-check:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v3
         with:
-          python-version: "3.12.11"
+          python-version: "3.12"
+
+      - name: Cache Poetry dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pypoetry
+          key: poetry-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
+          restore-keys: poetry-${{ runner.os }}-
+
+      - name: Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[all]"
+        run: poetry install --no-interaction --no-root --with dev
 
       - name: Lint and format
         run: |
-          # type check with mypy
-          mypy src
+          poetry run mypy src
           echo "::notice::Type checking passed!"
-
-          # check if code is formatted (fails if not)
-          black --check --diff .
+          poetry run black --check --diff .
           echo "::notice::Code formatting is correct"
-
-          isort --check-only --dif src
+          poetry run isort --check-only src
+          poetry run isort --check-only tests
           echo "::notice::Import sorting is correct"
 
           # stop the build if there are Python syntax errors or undefined names
-          flake8 src --count --select=E9,F63,F7,F82 --show-source --statistics
-
+          poetry run flake8 src --count --select=E9,F63,F7,F82 --show-source --statistics
           # exit-zero treats all errors as warnings
-          flake8 src --count --exit-zero --max-complexity=10 --max-line-length=136 --statistics
+          poetry run flake8 src --count --exit-zero --max-complexity=10 --max-line-length=136 --statistics
           echo "::notice::No linting issues found"
 
-      - name: Test with pytest
+      - name: Unit & Integration tests
         run: |
-          pytest -v
-          echo "::notice::All pytest passed"
+          poetry run pytest -v -m "not gcs"
+          echo "::notice::All unit and integration pytest passed"
 
-  docker-build:
+  image-build:
     runs-on: ubuntu-latest
-    environment: CREDENTIALS
-    needs: test
+    needs: lint-format-check
+    outputs:
+      mlflow_image_uri: ${{ steps.build.outputs.image_uri }}
     steps:
-      - name: set credentials
-        run: |
-          echo '${{ secrets.GCP_CREDENTIALS_JSON }}' > $HOME/gcp-key.json
-          export GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcp-key.json
-          export EPC_API_KEY=${{ secrets.EPC_API_KEY }}
-          ls -l $HOME/gcp-key.json
-
-          PROJECT_ID=$(jq -r '.project_id' $HOME/gcp-key.json)
-          echo "PROJECT_ID=$PROJECT_ID" >> $GITHUB_ENV
-
-          gcloud auth activate-service-account --key-file=$HOME/gcp-key.json
-          gcloud config set project $PROJECT_ID
-          
       - uses: actions/checkout@v4
-      - name: Build Docker Image
+      - id: build
+
+        name: Build and push MLflow image
         run: |
-          docker compose build
-          docker compose run -e GOOGLE_APPLICATION_CREDENTIALS=/secrets/gcp-key.json \
-          -v $HOME/gcp-key.json:/secrets/gcp-key.json \
-          train
-      - name: clean up GCP credentials 
-        if: always()   
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          DATE_TAG=$(date +%Y%m%d-%H%M)
+          IMAGE_URI="ghcr.io/${{ github.repository_owner }}/mlflow:${DATE_TAG}-sha-${SHORT_SHA}"
+
+          docker build -t $IMAGE_URI .
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          docker push $IMAGE_URI
+
+          echo "image_uri=$IMAGE_URI" >> $GITHUB_OUTPUT
+
+  terraform-deployment:
+    runs-on: ubuntu-latest
+    needs: image-build
+    environment: CREDENTIALS
+    outputs:
+      db_connection_url: ${{ steps.export.outputs.db_connection_url }}
+      mlflow_tracking_uri: ${{ steps.export.outputs.mlflow_tracking_uri }}
+      mlflow_artifact_uri: ${{ steps.export.outputs.mlflow_artifact_uri }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Cache Poetry dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pypoetry
+          key: poetry-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
+          restore-keys: poetry-${{ runner.os }}-
+
+      - name: Install Poetry
         run: |
-          gsutil rm gs://london-housing/**
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          poetry install --no-interaction --no-root
+
+      - name: Install gcloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+
+      - name: Set up GCP credentials
+        run: |
+          echo '${{ secrets.GCP_CREDENTIALS_JSON }}' > $GITHUB_WORKSPACE/gcp-key.json
+          export GOOGLE_APPLICATION_CREDENTIALS=$GITHUB_WORKSPACE/gcp-key.json
+
+          ls -l $GITHUB_WORKSPACE/gcp-key.json
+          head -n 5 $GITHUB_WORKSPACE/gcp-key.json
+
+          gcloud auth activate-service-account --key-file=$GITHUB_WORKSPACE/gcp-key.json
+
+          PROJECT_ID=$(jq -r '.project_id' $GITHUB_WORKSPACE/gcp-key.json)
+          gcloud config set project $PROJECT_ID
+
+          echo "PROJECT_ID=$PROJECT_ID" >> $GITHUB_ENV
+          echo "::group::Verifying GCP authentication"
+          gcloud auth list
+          gcloud config list project
+          echo "::endgroup"
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.8
+
+      - name: Cache Terraform plugins
+        uses: actions/cache@v4
+        with:
+          path: ~/.terraform.d/plugin-cache
+          key: terraform-${{ runner.os }}-${{ hashFiles('terraform/**/*.tf') }}
+          restore-keys: terraform-${{ runner.os }}-
+
+      - name: Terraform apply
+        id: export
+        timeout-minutes: 25
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/gcp-key.json
+        run: |
+          mkdir -p "$HOME/.terraform.d/plugin-cache"
+          export TF_PLUGIN_CACHE_DIR="$HOME/.terraform.d/plugin-cache"
+          export TF_LOG=DEBUG
+
+          terraform -chdir=terraform init -reconfigure -input=false
+          stdbuf -oL -eL terraform -chdir=terraform apply -auto-approve \
+          -var="mlflow_image_uri=${{ needs.image-build.outputs.mlflow_image_uri }}" \
+          -var="project_id=${{ env.PROJECT_ID }}" \
+          -no-color | tee terraform-apply.log
+
+          echo "Currently deployed MLflow image: ${{ needs.image-build.outputs.mlflow_image_uri }}"
+
+          export DB_CONNECTION_URL=$(terraform -chdir=terraform output -raw db_connection_url)
+          export MLFLOW_TRACKING_URI=$(terraform -chdir=terraform output -raw mlflow_tracking_uri)
+          export MLFLOW_ARTIFACT_URI=$(terraform -chdir=terraform output -raw mlflow_artifact_uri)
+
+          echo "DB_CONNECTION_URL=$DB_CONNECTION_URL" >> $GITHUB_ENV
+          echo "MLFLOW_TRACKING_URI=$MLFLOW_TRACKING_URI" >> $GITHUB_ENV
+          echo "MLFLOW_ARTIFACT_URI=$MLFLOW_ARTIFACT_URI" >> $GITHUB_ENV
+
+      - name: E2E test
+        run: |
+          poetry run pytest -v -m "gcs"
+          echo "::notice::All deployment pytest passed"
+
+      - name: Terraform destroy
+        if: ${{ steps.export.conclusion == 'success' }}
+        timeout-minutes: 10
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/gcp-key.json
+        run: |
+          set -e
+          echo "🧹 Cleaning up Terraform resources..."
+
+          gcloud auth activate-service-account --key-file="$GOOGLE_APPLICATION_CREDENTIALS"
+          gcloud config set project ${{ env.PROJECT_ID }}
+
+          export TF_LOG=DEBUG
+
+          terraform -chdir=terraform destroy -auto-approve \
+          -var="mlflow_image_uri=${{ needs.image-build.outputs.mlflow_image_uri }}" \
+          -var="project_id=${{ env.PROJECT_ID }}"
+          -no-color | tee terraform-apply.log || echo "⚠️ Destroy failed or partially cleaned up"
+
+      - name: Verify cleanup
+        if: always()
+        run: |
+          echo "Checking for leftover infra..."
+          gcloud compute instances list || true
+          gcloud sql instances list || true
+          gcloud storage buckets list || true

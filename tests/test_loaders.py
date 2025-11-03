@@ -1,16 +1,18 @@
 import csv
-from london_housing_ai.loaders import (
-    load_dataset,
-    load_cleaning_config,
-    load_augment_config,
-    load_train_config,
-)
+import os
 from pathlib import Path
+from typing import Any, List
+
+import pytest
 from pandas import DataFrame
 from pandas.testing import assert_frame_equal
-import os
-from typing import List, Any
-import pytest
+
+from london_housing_ai.loaders import (
+    load_augment_config,
+    load_cleaning_config,
+    load_dataset,
+    load_train_config,
+)
 
 
 def test_load_noheader_dataset():
@@ -73,10 +75,10 @@ def test_load_cleaning_config():
     path = Path(__file__).parent
     config = load_cleaning_config(path / "test_resources/test_cleaning_config.yaml")
 
-    assert config.clip_price == True
+    assert config.clip_price is True
     assert config.postcode_col == "postcodes"
     assert config.dtype_map == {"col1": "float", "col2": "datetime"}
-    assert config.clip_price == True
+    assert config.clip_price is True
     assert config.clip_quantile == 0.5
     assert config.col_headers == ["price", "date"]
 
@@ -98,7 +100,7 @@ def test_load_missing_field_cleaning_config():
 def test_load_invalid_augment_config():
     path = _get_dir_path()
     config = load_augment_config(path / "test_resources/invalid_test_config.yaml")
-    assert config == None
+    assert config is None
 
 
 def test_load_missing_field_augment_config():
@@ -110,9 +112,9 @@ def test_load_missing_field_augment_config():
 def test_load_train_config():
     path = _get_dir_path() / "test_resources/test_train_config.yaml"
     config = load_train_config(path)
-    assert config != None
+    assert config is not None
     assert config.cat_features == ["property_type", "old/new", "district"]
-    assert config.log_target == True
+    assert config.log_target is True
     assert config.clip_target_q == 0.99
     assert config.test_size == 0.15
     assert config.val_size == 0.15

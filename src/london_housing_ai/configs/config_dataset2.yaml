@@ -35,7 +35,7 @@ cleaning:
     - record_status
   rename_cols:
     old/new: is_new_build
-    duration: is_leasehold  
+    duration: is_leasehold
   dtype_map:
     price: float
     date: datetime
@@ -77,20 +77,18 @@ train:
     - advanced_property_type
     - property_type_and_tenure
     - property_type_and_district
-  label: price  
+  label: price
 
-feature_engineering:  
+feature_engineering:
   use_district: true
   city_filter:
-    city_col: county 
+    city_col: county
     filter_keywords:
       - london
-  timestamp_col: date    
+  timestamp_col: date
 
 parquet:
   sold_timestamp_col: date
-  silver_partition_cols: 
+  silver_partition_cols:
     - sold_year
-  bucket_name: london-housing
   destination_blob_name: by_sold_year
-

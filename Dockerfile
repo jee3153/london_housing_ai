@@ -1,13 +1,23 @@
-FROM python:3.12
+FROM python:3.12-slim
+
+# Install system dependencies for psycopg2, etc.
+RUN apt-get update && apt-get install -y build-essential libpq-dev && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-COPY . /app
+COPY pyproject.toml poetry.lock* ./
+
+RUN pip install poetry
+
+# Install Poetry and configure it to install system-wide
+RUN pip install poetry \
+    && poetry config virtualenvs.create false \
+    && poetry install --no-interaction --no-root
+
+COPY . .
 
 ENV PYTHONPATH=/app/src
 
-RUN pip install -e ".[all]"
-
 EXPOSE 8000
 
-CMD ["uvicorn", "london_housing_ai.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["bash"]

@@ -1,7 +1,6 @@
-# models.py
+from pathlib import Path
 from typing import Any, Tuple
 
-import mlflow
 import numpy as np
 import pandas as pd
 from catboost import CatBoostRegressor
@@ -10,19 +9,29 @@ from sklearn.metrics import root_mean_squared_error
 from sklearn.model_selection import StratifiedShuffleSplit
 
 from london_housing_ai.config_schemas.TrainConfig import TrainConfig
+from london_housing_ai.utils.logger import get_logger
+
+logger = get_logger()
 
 
 class PriceModel:
     def __init__(self, cfg: TrainConfig):
         self.cfg = cfg
-        self.model = CatBoostRegressor(
-            loss_function="MAE",
-            iterations=cfg.n_iter,
-            depth=cfg.depth,
-            learning_rate=cfg.lr,
-            early_stopping_rounds=cfg.early_stop,
-            random_seed=cfg.random_state,
-        )
+        params = {
+            "loss_function": "MAE",
+            "iterations": cfg.n_iter,
+            "depth": cfg.depth,
+            "learning_rate": cfg.lr,
+            "early_stopping_rounds": cfg.early_stop,
+            "random_seed": cfg.random_state,
+        }
+        self.model = CatBoostRegressor(**params)
+        self.log_data: dict[str, Any] = {
+            "params": params,
+            "artifacts": [],
+            "metrics": {},
+            "text": {},
+        }
 
     # ---------- helpers -------------------------------------------------
     @staticmethod
@@ -71,6 +80,8 @@ class PriceModel:
 
     # ---------- public API ---------------------------------------------
     def fit(self, df: pd.DataFrame, checksum: str):
+        self.log_data["text"]["columns_used"] = df.columns
+
         train, test, val = self._train_test_split(df)
 
         # train set
@@ -78,7 +89,6 @@ class PriceModel:
         # validation set
         X_val, y_val = self._split_feature_and_label(val, self.cfg.label)
 
-        mlflow.autolog()
         self.model.fit(
             X_train,
             y_train,
@@ -86,24 +96,35 @@ class PriceModel:
             eval_set=(X_val, y_val),
         )
 
-        # this presents which feature contribution rates
+        # Feature importances
         importances = self.model.get_feature_importance()
-        print(f"columns: {X_train.columns}")
-        importance_df = pd.DataFrame(
+        logger.info(f"columns: {X_train.columns}")
+        feature_importance_df = pd.DataFrame(
             {"feature": X_train.columns, "importance": importances}
         ).sort_values("importance", ascending=False)
-        print(f"==========importance========\n{importance_df}")
+
+        # Save to a file inside your output directory
+        output_dir = Path("outputs")
+        output_dir.mkdir(parents=True, exist_ok=True)
+        feature_importance_path = output_dir / "feature_importance.json"
+        feature_importance_df.to_json(
+            feature_importance_path, orient="records", indent=2
+        )
+
+        # store the path (not the JSON string)
+        self.log_data["artifacts"].append(feature_importance_path)
 
         # test set evaluation
         y_true, y_pred = self.predict(test)
         rmse = root_mean_squared_error(y_true, y_pred)
-        mlflow.log_metric("rmse", rmse)
-        mlflow.log_param("raw_csv_sha256", checksum)
+
+        self.log_data["metrics"]["rmse"] = rmse
+        self.log_data["params"]["raw_csv_sha256"] = checksum
 
         # validation set evaluation
         y_val_true, y_val_pred = self.predict(val)
-        val_rmse = root_mean_squared_error(y_true, y_pred)
-        mlflow.log_metric("val_rmse", val_rmse)
+        val_rmse = root_mean_squared_error(y_val_true, y_val_pred)
+        self.log_data["metrics"]["val_rmse"] = val_rmse
 
     def predict(self, df: pd.DataFrame) -> Tuple[np.ndarray, np.ndarray]:
         X = df.drop(columns="price")
