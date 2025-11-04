@@ -24,7 +24,9 @@ This project addresses that pain by automating the data ingestion, cleaning, and
 1. compose up all components.
 Change the args of train service in `./compose.yaml` to reflect your own dataset and configuration yaml file.
 ```bash
+docker compose down -v
 docker compose build
+docker compose up train mlflow postgres
 ```
 
 2. run train

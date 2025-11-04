@@ -6,7 +6,9 @@ import time
 from argparse import Namespace
 
 import mlflow
+from mlflow import MlflowClient
 import mlflow.catboost as mlflow_catboost
+import mlflow.exceptions
 from dotenv import load_dotenv
 
 from london_housing_ai.augmenters import add_floor_area
@@ -89,20 +91,21 @@ def main(args: Namespace) -> None:
 
         # ------comment it only when gcs uploading is required.
         # silver layer check-point
-        parquet_config = load_parquet_config(config_path)
-        parquet_dir = data_path / "silver"
+        # parquet_config = load_parquet_config(config_path)
+        # parquet_dir = data_path / "silver"
 
-        write_df_to_partitioned_parquet(
-            df=df,
-            out_dir=parquet_dir,
-            partition_cols=parquet_config.silver_partition_cols,
-        )
-        upload_parquet_to_gcs(
-            local_dir=parquet_dir,
-            destination_blob_name=parquet_config.destination_blob_name,
-            credential_path=os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"),
-            cleanup=args.cleanup_local,
-        )
+        # write_df_to_partitioned_parquet(
+        #     df=df,
+        #     out_dir=parquet_dir,
+        #     partition_cols=parquet_config.silver_partition_cols,
+        # )
+        # upload_parquet_to_gcs(
+        #     local_dir=parquet_dir,
+        #     destination_blob_name=parquet_config.destination_blob_name,
+        #     credential_path=os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"),
+        #     cleanup=args.cleanup_local,
+        # )
+        # -------end of gcs uploading
 
         df = asyncio.run(
             feature_engineer_dataset(
@@ -138,10 +141,17 @@ def main(args: Namespace) -> None:
         record_checksum(engine, checksum, table_name)
 
     # model training
-    mlflow.set_experiment("LondonHousingAI")
-    mlflow.set_registry_uri(
-        os.getenv("MLFLOW_ARTIFACT_URI", "gs://london-housing-ai-artifacts")
-    )
+    client = MlflowClient()
+    EXPERIMENT_NAME = "LondonHousingAI"
+    artifact_location = os.getenv("MLFLOW_ARTIFACT_URI", "file:/mlruns")
+    try:
+        client.create_experiment(EXPERIMENT_NAME, artifact_location=artifact_location)
+    except mlflow.exceptions.RestException:
+        logger.info(
+            f"The experiment {EXPERIMENT_NAME} already exists. Skip creating experiment."
+        )
+
+    mlflow.set_experiment(experiment_name=EXPERIMENT_NAME)
 
     # start logging metadata as you train a model
     with mlflow.start_run(run_name="london_housing_run") as run:
