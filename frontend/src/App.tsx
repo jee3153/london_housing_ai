@@ -1,15 +1,12 @@
-import { useState } from 'react'
-import { Button } from './components/ui/button'
 import './App.css'
-import './components/ModelPerformance'
+import './components/model_performance/ModelPerformance'
+import DashboardPage from './components/DashboardPage'
+
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
     <>
-      <div>
-      </div >
+      <DashboardPage />
     </>
   )
 }

@@ -1,7 +1,8 @@
-import mlflow.pyfunc
 import os
 import numpy as np
+import mlflow.pyfunc
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from mlflow.tracking import MlflowClient
 from pydantic import BaseModel
 from dotenv import load_dotenv
@@ -33,6 +34,14 @@ run_id = runs[0].info.run_id
 model = mlflow.pyfunc.load_model(f"runs:/{run_id}/{os.getenv("MLFLOW_MODEL_NAME")}")
 
 app = FastAPI(title="London Housing Price Predictor")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 # Define input schema using Pydantic
