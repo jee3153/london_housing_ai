@@ -22,6 +22,7 @@ services:
       GOOGLE_APPLICATION_CREDENTIALS: ${GOOGLE_APPLICATION_CREDENTIALS:-/app/credentials/service-account.json}
       MLFLOW_TRACKING_URI: ${MLFLOW_TRACKING_URI:-http://mlflow:5000}
       MLFLOW_ARTIFACT_URI: ${MLFLOW_ARTIFACT_URI:-file:/mlruns}
+      MLFLOW_MODEL_NAME: ${MLFLOW_MODEL_NAME:-london_housing_model}
       DEV_MODE: ${DEV_MODE:-false}
 
   postgres:
@@ -59,13 +60,14 @@ services:
   api:
     build: .
     working_dir: /app
-    command: uvicorn london_housing_ai.api.main:app --host 0.0.0.0 --port 7777 --reload
+    command: uvicorn london_housing_ai.api.main_api:app --host 0.0.0.0 --port 7777 --reload
     depends_on:
       - mlflow
     ports:
       - "7777:7777"
     environment:
       MLFLOW_TRACKING_URI: http://mlflow:5000
+      MLFLOW_MODEL_NAME: ${MLFLOW_MODEL_NAME:-london_housing_model}
       PYTHONPATH: /app/src
     volumes:
       - ./src:/app/src

@@ -163,7 +163,7 @@ def main(args: Namespace) -> None:
         # log trained model into MLflow under consistent path
         mlflow_catboost.log_model(
             cb_model=trainer.model,
-            name="london_housing_model",
+            name=os.getenv("MLFLOW_MODEL_NAME"),
             input_example=training_df.iloc[:1],
         )
         experiment_logger = ExperimentLogger(trainer, run)

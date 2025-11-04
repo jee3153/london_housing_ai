@@ -157,6 +157,7 @@ jobs:
         timeout-minutes: 25
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/gcp-key.json
+          MLFLOW_MODEL_NAME: london_housing_model
         run: |
           cd ..
           mkdir -p "$HOME/.terraform.d/plugin-cache"
