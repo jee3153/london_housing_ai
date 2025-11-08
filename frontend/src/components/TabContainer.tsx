@@ -10,7 +10,7 @@ interface TabsContainerProps {
 export const TabContainer: React.FC<TabsContainerProps> = ({ defaultValue = OVERVIEW }) => {
     return (
         <Tabs defaultValue={defaultValue} className="w-full">
-            <div className='sticky top-0 bg-white z-20 border-b'>
+            <div className='sticky top-0 bg-white z-20 border-b w-screen'>
                 <TabsList className='flex gap-4 px-4'>
                     {tabs.map((tab) => (
                         <TabsTrigger

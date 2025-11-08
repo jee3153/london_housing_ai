@@ -7,7 +7,7 @@ import { TabsContent } from "./ui/tabs";
 
 
 function PageContents() {
-  const [latestRun, setLatestRun] = useState<MlflowRunResponse | null>(null);
+  const [runs, setRuns] = useState<MlflowRunResponse[] | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -17,16 +17,16 @@ function PageContents() {
         setLoading(true)
         const runs = await getLatestRuns();
         if (runs.length > 0) {
-          setLatestRun(runs[0]);    // first run is the most recent
+          setRuns(runs);    // first run is the most recent
         } else {
-          setLatestRun(null);
+          setRuns(null);
         }
       } catch (error) {
         console.error("Error fetching runs", error);
         setError("Error fetching runs")
-        setLatestRun(null);
+        setRuns(null);
       } finally {
-        setLoading(true)
+        setLoading(false)
       }
     }
 
@@ -40,7 +40,7 @@ function PageContents() {
 
       <TabsContent value={OVERVIEW}> … overview section … </TabsContent>
       <TabsContent value={MODEL_COMPARISON}>
-        <ModelPerformance latestRun={latestRun} />
+        <ModelPerformance runs={runs} />
       </TabsContent>
       <TabsContent value={DATA_QUALITY}> … data quality section … </TabsContent>
       <TabsContent value={UPLOAD_DATA}> … upload data section … </TabsContent>
