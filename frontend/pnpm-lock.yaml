@@ -33,7 +33,7 @@ importers:
         specifier: ^19.1.1
         version: 19.2.0(react@19.2.0)
       recharts:
-        specifier: ^2.15.4
+        specifier: 2.15.4
         version: 2.15.4(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       tailwind-merge:
         specifier: ^3.3.1
