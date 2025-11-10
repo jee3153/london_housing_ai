@@ -1,6 +1,6 @@
 export interface MlflowRunMetrics {
   rmse: number;
-  val_rmse: number;
+  validation_rmse: number;
 }
 
 export interface MlflowRunParams {

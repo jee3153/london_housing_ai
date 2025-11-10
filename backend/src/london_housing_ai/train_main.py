@@ -27,7 +27,6 @@ from london_housing_ai.loaders import (
 )
 from london_housing_ai.models import PriceModel
 from london_housing_ai.persistence import (
-    _get_table_name_from_date,
     dataset_already_persisted,
     ensure_checksum_table,
     get_dataset_from_db,
@@ -35,7 +34,6 @@ from london_housing_ai.persistence import (
     persist_dataset,
     record_checksum,
     reset_postgres,
-    table_exists,
 )
 from london_housing_ai.pipeline import (
     clean_dataset,
@@ -67,16 +65,13 @@ def main(args: Namespace) -> None:
     engine = get_engine()
     ensure_checksum_table(engine)
     checksum = file_sha256(csv_path)
-    table_name = _get_table_name_from_date(
-        datetime.date.fromtimestamp(time.time()).isoformat()
-    )
 
     # if dataset exists load dataset from db
-    if dataset_already_persisted(engine, checksum) or table_exists(engine, table_name):
+    if dataset_already_persisted(engine, checksum):
         logger.info(
             f"checksum '{checksum}' for '{csv_path}' is found, skipping cleaning and extraction."
         )
-        df = get_dataset_from_db(engine, table_name)
+        df = get_dataset_from_db(engine, checksum)
     else:
         logger.info(
             f"checksum '{checksum}' for '{csv_path}' is not found, proceeding cleaning and extraction."
@@ -137,8 +132,8 @@ def main(args: Namespace) -> None:
         # gold layer check-point
 
         # persist clean/merged dataset
-        persist_dataset(df, engine, table_name)
-        record_checksum(engine, checksum, table_name)
+        persist_dataset(df, engine, checksum)
+        record_checksum(engine, checksum)
 
     # model training
     client = MlflowClient()
@@ -158,7 +153,7 @@ def main(args: Namespace) -> None:
         train_cfg = load_train_config(config_path)
         training_df = df_with_required_cols(df, train_cfg)
         trainer = PriceModel(train_cfg)
-        trainer.fit(training_df, checksum)
+        trainer.train_and_evaluate(training_df, checksum)
 
         # log trained model into MLflow under consistent path
         mlflow_catboost.log_model(

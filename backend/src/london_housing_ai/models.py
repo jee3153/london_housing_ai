@@ -1,17 +1,25 @@
 from pathlib import Path
-from typing import Any, Tuple
-
+from typing import Any, Tuple, Union, Dict
+from enum import Enum
 import numpy as np
 import pandas as pd
 from catboost import CatBoostRegressor
 from numpy.typing import NDArray
-from sklearn.metrics import root_mean_squared_error
+from sklearn.metrics import mean_squared_error, root_mean_squared_error, r2_score
 from sklearn.model_selection import StratifiedShuffleSplit
 
 from london_housing_ai.config_schemas.TrainConfig import TrainConfig
 from london_housing_ai.utils.logger import get_logger
 
 logger = get_logger()
+
+YType = Union[pd.Series, NDArray[np.float64]]
+
+
+class MetricType(Enum):
+    TRAIN = "train"
+    VALIDATION = "validation"
+    TEST = "test"
 
 
 class PriceModel:
@@ -78,16 +86,31 @@ class PriceModel:
             train_val_df.iloc[val_idx].copy(),
         )
 
-    # ---------- public API ---------------------------------------------
-    def fit(self, df: pd.DataFrame, checksum: str):
-        self.log_data["text"]["columns_used"] = df.columns
+    def _split_feature_and_label(
+        self, df: pd.DataFrame, feature_col: str
+    ) -> Tuple[pd.DataFrame, pd.Series | NDArray[Any]]:
+        features = df.drop(columns=feature_col)
+        # clipping: if the value > threshold, value = threshold to avoid outliers
+        labels = df[feature_col].clip(
+            upper=df[feature_col].quantile(self.cfg.clip_target_q)
+        )
+        if self.cfg.log_target:
+            labels = np.log1p(labels)
+        return features, labels
 
-        train, test, val = self._train_test_split(df)
-
+    def _train_model(
+        self, train_set: pd.DataFrame, validation_set: pd.DataFrame
+    ) -> Tuple[YType, YType]:
+        """
+        Teach the model to learn patterns
+        Student's practice problem:
+        If models were student, they can look up solutions and learn from them.
+        Model learns the relationship between input features and target labels here
+        """
         # train set
-        X_train, y_train = self._split_feature_and_label(train, self.cfg.label)
+        X_train, y_train = self._split_feature_and_label(train_set, self.cfg.label)
         # validation set
-        X_val, y_val = self._split_feature_and_label(val, self.cfg.label)
+        X_val, y_val = self._split_feature_and_label(validation_set, self.cfg.label)
 
         self.model.fit(
             X_train,
@@ -95,6 +118,8 @@ class PriceModel:
             cat_features=self.cfg.cat_features,
             eval_set=(X_val, y_val),
         )
+
+        y_train_true, y_train_pred = self.model.predict(train_set)
 
         # Feature importances
         importances = self.model.get_feature_importance()
@@ -114,17 +139,88 @@ class PriceModel:
         # store the path (not the JSON string)
         self.log_data["artifacts"].append(feature_importance_path)
 
-        # test set evaluation
-        y_true, y_pred = self.predict(test)
+        return y_train_true, y_train_pred
+
+    def _validate_model(self, validation_set: pd.DataFrame) -> Tuple[YType, YType]:
+        """
+        Check how well model generalizes during development
+        The mock exam:
+        If models were student, this is used to check progress, adjust study strategies, and identify weaknesses.
+        Used to tune hyperparameters or choose the best model
+        """
+        # validation - tuning / model selection for evalution performance to know which model is best
+        # inference validation set
+        y_val_true, y_val_pred = self.predict(validation_set)
+        val_rmse = root_mean_squared_error(y_val_true, y_val_pred)
+        val_mse = mean_squared_error(y_val_true, y_val_pred)
+        # r^2: how much of that variability is captured by model's predictions
+        val_r2 = r2_score(y_val_true, y_val_pred)
+        self.log_data["metrics"]["val_rmse"] = val_rmse
+        self.log_data["metrics"]["val_mse"] = val_mse
+        self.log_data["metrics"]["val_r2"] = val_r2
+
+        return y_val_true, y_val_pred
+
+    def _test_model(self, test_set: pd.DataFrame) -> Tuple[YType, YType]:
+        """
+        Simulate real-world, unseen data performance
+        The real exam:
+        If models were student, they never seen each problems before and gives the final unbiased measure of knowledge.
+        Used only once — after all model tuning is finished
+        """
+
+        # inference test set
+        y_true, y_pred = self.predict(test_set)
+        # rmse: how large your prediction errors are on avg
         rmse = root_mean_squared_error(y_true, y_pred)
+        mse = mean_squared_error(y_true, y_pred)
 
         self.log_data["metrics"]["rmse"] = rmse
-        self.log_data["params"]["raw_csv_sha256"] = checksum
+        # for learning progress
+        self.log_data["metrics"]["mse"] = mse
 
-        # validation set evaluation
-        y_val_true, y_val_pred = self.predict(val)
-        val_rmse = root_mean_squared_error(y_val_true, y_val_pred)
-        self.log_data["metrics"]["val_rmse"] = val_rmse
+        return y_true, y_pred
+
+    def _evaluate_regression_metrics(
+        self, y_true: YType, y_pred: YType, metric_type: MetricType
+    ) -> Dict[str, float]:
+        rmse = root_mean_squared_error(y_true, y_pred)
+        mse = mean_squared_error(y_true, y_pred)
+        r2 = r2_score(y_true, y_pred)
+
+        return {
+            f"{metric_type.value}_rmse": rmse,
+            f"{metric_type.value}_mse": mse,
+            f"{metric_type.value}_r2": r2,
+        }
+
+    def _log_all_metrics(self, metric_map: Dict[str, float]):
+        for metric, value in metric_map.items():
+            self.log_data["metrics"][metric] = value
+
+    # ---------- public API ---------------------------------------------
+    def train_and_evaluate(self, df: pd.DataFrame, checksum: str):
+        self.log_data["text"]["columns_used"] = df.columns
+
+        train, test, val = self._train_test_split(df)
+
+        y_train_true, y_train_pred = self._train_model(train, val)
+        y_val_true, y_val_pred = self._validate_model(val)
+        y_true, y_pred = self._test_model(test)
+
+        train_metrics = self._evaluate_regression_metrics(
+            y_train_true, y_train_pred, MetricType.TRAIN
+        )
+        validation_metrics = self._evaluate_regression_metrics(
+            y_val_true, y_val_pred, MetricType.VALIDATION
+        )
+        test_metrics = self._evaluate_regression_metrics(
+            y_true, y_pred, MetricType.TEST
+        )
+
+        self._log_all_metrics({**train_metrics, **validation_metrics, **test_metrics})
+
+        self.log_data["params"]["raw_csv_sha256"] = checksum
 
     def predict(self, df: pd.DataFrame) -> Tuple[np.ndarray, np.ndarray]:
         X = df.drop(columns="price")
@@ -134,15 +230,3 @@ class PriceModel:
             y_pred = np.expm1(y_pred)
         y_pred = np.asarray(y_pred)
         return y_true, y_pred
-
-    def _split_feature_and_label(
-        self, df: pd.DataFrame, feature_col: str
-    ) -> Tuple[pd.DataFrame, pd.Series | NDArray[Any]]:
-        features = df.drop(columns=feature_col)
-        # clipping: if the value > threshold, value = threshold to avoid outliers
-        labels = df[feature_col].clip(
-            upper=df[feature_col].quantile(self.cfg.clip_target_q)
-        )
-        if self.cfg.log_target:
-            labels = np.log1p(labels)
-        return features, labels

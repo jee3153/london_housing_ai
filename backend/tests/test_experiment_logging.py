@@ -39,7 +39,7 @@ def test_mlflow_logging_end_to_end(tmp_path):
 
     # Run training
     model = PriceModel(cfg)
-    model.fit(df, checksum="dummy123")
+    model.train_and_evaluate(df, checksum="dummy123")
 
     with mlflow.start_run(run_name="unit_test") as run:
         logger = ExperimentLogger(model, run)

@@ -63,7 +63,7 @@ export default function ModelPerformance({ runs }: ModelPerformanceProps) {
         year: 'numeric'
       }),
       rmse: run.data.metrics.rmse,
-      rmse_validation: run.data.metrics.val_rmse
+      rmse_validation: run.data.metrics.validation_rmse
     }
   })
 
