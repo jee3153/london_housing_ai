@@ -158,6 +158,7 @@ jobs:
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/gcp-key.json
           MLFLOW_MODEL_NAME: london_housing_model
+          MLFLOW_ARTIFACT_PATH: catboost_model
         run: |
           cd ..
           mkdir -p "$HOME/.terraform.d/plugin-cache"

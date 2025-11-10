@@ -22,6 +22,7 @@ services:
       GOOGLE_APPLICATION_CREDENTIALS: ${GOOGLE_APPLICATION_CREDENTIALS:-/app/credentials/service-account.json}
       MLFLOW_TRACKING_URI: ${MLFLOW_TRACKING_URI:-http://mlflow:5000}
       MLFLOW_ARTIFACT_URI: ${MLFLOW_ARTIFACT_URI:-file:/mlruns}
+      MLFLOW_ARTIFACT_PATH: ${MLFLOW_ARTIFACT_PATH:-catboost_model}
       MLFLOW_MODEL_NAME: ${MLFLOW_MODEL_NAME:-london_housing_model}
       DEV_MODE: ${DEV_MODE:-false}
 

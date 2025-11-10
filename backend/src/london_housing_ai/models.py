@@ -119,7 +119,7 @@ class PriceModel:
             eval_set=(X_val, y_val),
         )
 
-        y_train_true, y_train_pred = self.model.predict(train_set)
+        y_train_true, y_train_pred = self.predict(train_set)
 
         # Feature importances
         importances = self.model.get_feature_importance()

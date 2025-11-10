@@ -155,12 +155,18 @@ def main(args: Namespace) -> None:
         trainer = PriceModel(train_cfg)
         trainer.train_and_evaluate(training_df, checksum)
 
-        # log trained model into MLflow under consistent path
-        mlflow_catboost.log_model(
-            cb_model=trainer.model,
-            name=os.getenv("MLFLOW_MODEL_NAME"),
-            input_example=training_df.iloc[:1],
-        )
+        try:
+            # log trained model into MLflow under consistent path
+            mlflow_catboost.log_model(
+                cb_model=trainer.model,
+                artifact_path=os.getenv("MLFLOW_ARTIFACT_PATH", "catboost_model"),
+                input_example=training_df.iloc[:1],
+            )
+        except Exception as exc:
+            logger.exception(
+                f"Failed to log Catboost model to MLflow. caused by: {exc}"
+            )
+            raise
         experiment_logger = ExperimentLogger(trainer, run)
         experiment_logger.log_all()
         logger.info(f"the experiment of model has completed. run_id={run.info.run_id}")
