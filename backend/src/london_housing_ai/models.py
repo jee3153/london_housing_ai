@@ -151,14 +151,6 @@ class PriceModel:
         # validation - tuning / model selection for evalution performance to know which model is best
         # inference validation set
         y_val_true, y_val_pred = self.predict(validation_set)
-        val_rmse = root_mean_squared_error(y_val_true, y_val_pred)
-        val_mse = mean_squared_error(y_val_true, y_val_pred)
-        # r^2: how much of that variability is captured by model's predictions
-        val_r2 = r2_score(y_val_true, y_val_pred)
-        self.log_data["metrics"]["val_rmse"] = val_rmse
-        self.log_data["metrics"]["val_mse"] = val_mse
-        self.log_data["metrics"]["val_r2"] = val_r2
-
         return y_val_true, y_val_pred
 
     def _test_model(self, test_set: pd.DataFrame) -> Tuple[YType, YType]:
@@ -171,19 +163,16 @@ class PriceModel:
 
         # inference test set
         y_true, y_pred = self.predict(test_set)
-        # rmse: how large your prediction errors are on avg
-        rmse = root_mean_squared_error(y_true, y_pred)
-        mse = mean_squared_error(y_true, y_pred)
-
-        self.log_data["metrics"]["rmse"] = rmse
-        # for learning progress
-        self.log_data["metrics"]["mse"] = mse
-
         return y_true, y_pred
 
     def _evaluate_regression_metrics(
         self, y_true: YType, y_pred: YType, metric_type: MetricType
     ) -> Dict[str, float]:
+        """
+        r^2: how much of that variability is captured by model's predictions
+        rmse: how large your prediction errors are on avg and square root of it
+        mse: how large your prediction errors are on avg
+        """
         rmse = root_mean_squared_error(y_true, y_pred)
         mse = mean_squared_error(y_true, y_pred)
         r2 = r2_score(y_true, y_pred)

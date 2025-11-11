@@ -31,7 +31,7 @@ if not runs:
     )
 run_id = runs[0].info.run_id
 # Load your MLflow model by run ID or local path
-model = mlflow.pyfunc.load_model(f"runs:/{run_id}/{os.getenv("MLFLOW_MODEL_NAME")}")
+model = mlflow.pyfunc.load_model(f"runs:/{run_id}/{os.getenv("MLFLOW_ARTIFACT_PATH")}")
 
 app = FastAPI(title="London Housing Price Predictor")
 
