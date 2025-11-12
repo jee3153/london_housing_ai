@@ -15,6 +15,7 @@ export interface MlflowRunParams {
   early_stopping_rounds: string;
   random_seed: string;
   raw_csv_sha256: string;
+  model_class: string;
 }
 
 export interface MlflowRunTags {

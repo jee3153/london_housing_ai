@@ -1,7 +1,5 @@
-import type { MlflowRunResponse } from "../../types/mlflow";
 import type { JSX } from "react";
 import { Monitor } from "lucide-react"
-import { Card, CardHeader, CardTitle, CardDescription } from "../ui/card"
 import {
   Table,
   TableBody,
@@ -11,37 +9,20 @@ import {
   TableHeader,
   TableRow,
 } from "../ui/table"
-import { ChartContainer } from "../ui/chart"
 import type { ChartConfig } from "../ui/chart"
-import { CartesianGrid, Line, LineChart, XAxis, YAxis, Tooltip, Legend } from 'recharts';
-import {
-  Item,
-  ItemActions,
-  ItemContent,
-  ItemDescription,
-  ItemMedia,
-  ItemTitle,
-} from "../ui/item"
+import type { ModelPerformanceProps } from '../../types/props'
+import { LineChartCard } from '../LineChartCard'
+import ModelMetricCard from "./ModelMetricCard";
+import { getReadableTimeStamp } from "../../lib/utils";
 
-type ModelPerformanceProps = {
-  runs: MlflowRunResponse[] | null;
-};
 
-type ChartConfigProps = {
-  desktop: ChartConfig
-}
 
 export default function ModelPerformance({ runs }: ModelPerformanceProps) {
   if (runs == null) return (
     <p className="mt-4 text-sm text-muted-foreground">No MLflow runs found yet.</p>
   )
-  // const RMSE_TEST_DATA_KEY = "test_rmse"
   const R2_VALIDATION_DATA_KEY = "validation_r2"
   const RMSE_VALIDATION_DATA_KEY = "validation_rmse"
-
-  // const testRmse = runs.map(run => run.data.metrics.test_rmse)
-  const validationRmse = runs.map(run => run.data.metrics.validation_rmse)
-  const validationR2 = runs.map(run => run.data.metrics.validation_r2)
 
   const renderTableCells = (paramData: { [key: string]: any }): JSX.Element[] => {
     return Object.entries(paramData).map(([_, val]) => <TableCell>{val}</TableCell>)
@@ -58,59 +39,26 @@ export default function ModelPerformance({ runs }: ModelPerformanceProps) {
 
   const rmseData = runs.map(run => {
     return {
-      name: new Date(run.info.end_time).toLocaleDateString('en-GB', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      }),
-      validation_rmse: run.data.metrics.validation_rmse.toFixed(2)
+      name: getReadableTimeStamp(run.info.end_time),
+      validation_rmse: Number(run.data.metrics.validation_rmse.toFixed(2))
     }
   })
 
   const r2Data = runs.map(run => {
     return {
-      name: new Date(run.info.end_time).toLocaleDateString('en-GB', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      }),
-      validation_r2: run.data.metrics.validation_r2.toFixed(2)
+      name: getReadableTimeStamp(run.info.end_time),
+      validation_r2: Number(run.data.metrics.validation_r2.toFixed(2))
     }
   })
 
+  const rmseSorted = rmseData.map(data => Number(data.validation_rmse)).sort()
+  const bestRmse = rmseSorted[0]
+  const secondBest = rmseSorted.length > 1 ? rmseSorted[1] : null
 
   return (
     <section className="space-y-10">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-        {
-          runs.map(run => (
-            <Card>
-              <CardHeader>
-                <CardTitle>Model name</CardTitle>
-                <CardDescription>
-                  <Item>
-                    <ItemContent>
-                      <ItemTitle>RMSE</ItemTitle>
-                      <ItemDescription>{run.data.metrics.validation_rmse}</ItemDescription>
-                    </ItemContent>
-                    <ItemContent>
-                      <ItemTitle>MSE</ItemTitle>
-                      <ItemDescription>{run.data.metrics.validation_mse}</ItemDescription>
-                    </ItemContent>
-                    <ItemContent>
-                      <ItemTitle>R²</ItemTitle>
-                      <ItemDescription>{run.data.metrics.validation_r2}</ItemDescription>
-                    </ItemContent>
-                  </Item>
-                </CardDescription>
-              </CardHeader>
-            </Card>
-          ))
-        }
+        {runs.map(run => (<ModelMetricCard run={run} bestRmse={bestRmse} secondBest={secondBest} />))}
       </div>
 
       <div>
@@ -140,47 +88,8 @@ export default function ModelPerformance({ runs }: ModelPerformanceProps) {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Average Error Rate in £</CardTitle>
-            <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
-              <LineChart data={rmseData}>
-                <CartesianGrid stroke="#eee" strokeDasharray="5 5" />
-                <XAxis
-                  dataKey="name"
-                  label={{ value: "Date", position: "insideBottom", offset: -5 }}
-                  angle={-45}
-                  textAnchor="end"
-                  height={80} />
-                <YAxis label={{ value: "£", angle: -90, position: "insideLeft" }} domain={[Math.min(...validationRmse), Math.max(...validationRmse)]} />
-                <Tooltip />
-                <Legend />
-                <Line type="monotone" dataKey={RMSE_VALIDATION_DATA_KEY} stroke="var(--chart-1)" />
-              </LineChart>
-            </ChartContainer>
-          </CardHeader>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>R²</CardTitle>
-            <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
-              <LineChart data={r2Data}>
-                <CartesianGrid stroke="#eee" strokeDasharray="5 5" />
-                <XAxis
-                  dataKey="name"
-                  label={{ value: "Date", position: "insideBottom", offset: -5 }}
-                  angle={-45}
-                  textAnchor="end"
-                  height={80} />
-                <YAxis label={{ value: "£", angle: -90, position: "insideLeft" }} domain={[Math.min(...validationR2), Math.max(...validationR2)]} />
-                <Tooltip />
-                <Legend />
-                <Line type="monotone" dataKey={R2_VALIDATION_DATA_KEY} stroke="var(--chart-2)" />
-              </LineChart>
-            </ChartContainer>
-          </CardHeader>
-        </Card>
+        <LineChartCard data={rmseData} chartConfig={chartConfig} dataKey={RMSE_VALIDATION_DATA_KEY} stroke="var(--chart-1)" title="RMSE" />
+        <LineChartCard data={r2Data} chartConfig={chartConfig} dataKey={R2_VALIDATION_DATA_KEY} stroke="var(--chart-2)" title="R²" />
       </div>
     </section>
   )
