@@ -1,6 +1,10 @@
 export interface MlflowRunMetrics {
-  rmse: number;
+  test_rmse: number;
+  test_mse: number;
+  validation_mse: number;
   validation_rmse: number;
+  validation_r2: number;
+  train_rmse: number;
 }
 
 export interface MlflowRunParams {
