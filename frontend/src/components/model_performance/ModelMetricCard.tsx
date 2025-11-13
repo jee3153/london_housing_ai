@@ -12,6 +12,9 @@ import {
 } from "../ui/item"
 
 function ModelMetricCard({ run, bestRmse, secondBest }: ModelMetricCardProps) {
+    const validationRmse = run.data.metrics.validation_rmse
+    const trainRmse = run.data.metrics.train_rmse
+
     const showRightBadge = (rmse: number): JSX.Element => {
         if (rmse === bestRmse) {
             return <Badge>Champion</Badge>
@@ -28,6 +31,22 @@ function ModelMetricCard({ run, bestRmse, secondBest }: ModelMetricCardProps) {
             return `${modelType} 🏆`
         }
         return modelType
+    }
+
+    const showGeneralisationText = (computedGap: number): JSX.Element => {
+        if (computedGap < 0.1) {
+            return <p className="text-center mt-8 p-3 text-green-400">✅ Excellent generalization</p>
+        }
+        else if (computedGap < 0.25) {
+            return <p className="text-center mt-8 p-3 text-yellow-400">Acceptable generalization</p>
+        }
+        else if (computedGap < 0.4) {
+            return <p className="text-center mt-8 p-3 text-orange-400">`⚠️ Potential overfit (${computedGap * 100}% gap)`</p>
+        }
+        else {
+            return <p className="text-center mt-8 p-3 text-red-400">`🔴 Likely overfit (${computedGap * 100}% gap)`</p>
+        }
+
     }
     return (
         <Card>
@@ -77,9 +96,10 @@ function ModelMetricCard({ run, bestRmse, secondBest }: ModelMetricCardProps) {
                             <ItemDescription className="text-base font-semibold">£{run.data.metrics.test_rmse.toFixed(2)}</ItemDescription>
                         </Item>
                     </Item>
+                    {showGeneralisationText((validationRmse - trainRmse) / trainRmse)}
                 </CardDescription>
             </CardHeader>
-        </Card>
+        </Card >
     )
 }
 

@@ -15,8 +15,6 @@ import { LineChartCard } from '../LineChartCard'
 import ModelMetricCard from "./ModelMetricCard";
 import { getReadableTimeStamp } from "../../lib/utils";
 
-
-
 export default function ModelPerformance({ runs }: ModelPerformanceProps) {
   if (runs == null) return (
     <p className="mt-4 text-sm text-muted-foreground">No MLflow runs found yet.</p>
