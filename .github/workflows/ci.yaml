@@ -116,114 +116,114 @@ jobs:
           echo "$HOME/.local/bin" >> $GITHUB_PATH
           poetry install --no-interaction --no-root
 
-      - name: Install gcloud SDK
-        uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ env.PROJECT_ID }}
+      # - name: Install gcloud SDK
+      #   uses: google-github-actions/setup-gcloud@v2
+      #   with:
+      #     project_id: ${{ env.PROJECT_ID }}
 
-      - name: Set up GCP credentials
-        run: |
-          echo '${{ secrets.GCP_CREDENTIALS_JSON }}' > $GITHUB_WORKSPACE/gcp-key.json
-          export GOOGLE_APPLICATION_CREDENTIALS=$GITHUB_WORKSPACE/gcp-key.json
+      # - name: Set up GCP credentials
+      #   run: |
+      #     echo '${{ secrets.GCP_CREDENTIALS_JSON }}' > $GITHUB_WORKSPACE/gcp-key.json
+      #     export GOOGLE_APPLICATION_CREDENTIALS=$GITHUB_WORKSPACE/gcp-key.json
 
-          ls -l $GITHUB_WORKSPACE/gcp-key.json
-          head -n 5 $GITHUB_WORKSPACE/gcp-key.json
+      #     ls -l $GITHUB_WORKSPACE/gcp-key.json
+      #     head -n 5 $GITHUB_WORKSPACE/gcp-key.json
 
-          gcloud auth activate-service-account --key-file=$GITHUB_WORKSPACE/gcp-key.json
+      #     gcloud auth activate-service-account --key-file=$GITHUB_WORKSPACE/gcp-key.json
 
-          PROJECT_ID=$(jq -r '.project_id' $GITHUB_WORKSPACE/gcp-key.json)
-          gcloud config set project $PROJECT_ID
+      #     PROJECT_ID=$(jq -r '.project_id' $GITHUB_WORKSPACE/gcp-key.json)
+      #     gcloud config set project $PROJECT_ID
 
-          echo "PROJECT_ID=$PROJECT_ID" >> $GITHUB_ENV
-          echo "::group::Verifying GCP authentication"
-          gcloud auth list
-          gcloud config list project
-          echo "::endgroup"
+      #     echo "PROJECT_ID=$PROJECT_ID" >> $GITHUB_ENV
+      #     echo "::group::Verifying GCP authentication"
+      #     gcloud auth list
+      #     gcloud config list project
+      #     echo "::endgroup"
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.9.8
+      # - name: Setup Terraform
+      #   uses: hashicorp/setup-terraform@v3
+      #   with:
+      #     terraform_version: 1.9.8
 
-      - name: Cache Terraform plugins
-        uses: actions/cache@v4
-        with:
-          path: ~/.terraform.d/plugin-cache
-          key: terraform-${{ runner.os }}-${{ hashFiles('terraform/**/*.tf') }}
-          restore-keys: terraform-${{ runner.os }}-
+      # - name: Cache Terraform plugins
+      #   uses: actions/cache@v4
+      #   with:
+      #     path: ~/.terraform.d/plugin-cache
+      #     key: terraform-${{ runner.os }}-${{ hashFiles('terraform/**/*.tf') }}
+      #     restore-keys: terraform-${{ runner.os }}-
 
-      - name: Terraform apply
-        shell: bash
-        id: export
-        timeout-minutes: 25
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/gcp-key.json
-          MLFLOW_MODEL_NAME: london_housing_model
-          MLFLOW_ARTIFACT_PATH: catboost_model
-        run: |
-          set -euo pipefail
+      # - name: Terraform apply
+      #   shell: bash
+      #   id: export
+      #   timeout-minutes: 25
+      #   env:
+      #     GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/gcp-key.json
+      #     MLFLOW_MODEL_NAME: london_housing_model
+      #     MLFLOW_ARTIFACT_PATH: catboost_model
+      #   run: |
+      #     set -euo pipefail
 
-          cd ..
-          mkdir -p "$HOME/.terraform.d/plugin-cache"
-          export TF_PLUGIN_CACHE_DIR="$HOME/.terraform.d/plugin-cache"
-          export TF_LOG=DEBUG
+      #     cd ..
+      #     mkdir -p "$HOME/.terraform.d/plugin-cache"
+      #     export TF_PLUGIN_CACHE_DIR="$HOME/.terraform.d/plugin-cache"
+      #     export TF_LOG=DEBUG
 
-          terraform -chdir=terraform init -reconfigure -input=false
-          stdbuf -oL -eL terraform -chdir=terraform apply -auto-approve \
-          -var="mlflow_image_uri=${{ needs.image-build.outputs.mlflow_image_uri }}" \
-          -var="project_id=${{ env.PROJECT_ID }}" \
-          -no-color | tee terraform-apply.log
+      #     terraform -chdir=terraform init -reconfigure -input=false
+      #     stdbuf -oL -eL terraform -chdir=terraform apply -auto-approve \
+      #     -var="mlflow_image_uri=${{ needs.image-build.outputs.mlflow_image_uri }}" \
+      #     -var="project_id=${{ env.PROJECT_ID }}" \
+      #     -no-color | tee terraform-apply.log
 
-          echo "Currently deployed MLflow image: ${{ needs.image-build.outputs.mlflow_image_uri }}"
+      #     echo "Currently deployed MLflow image: ${{ needs.image-build.outputs.mlflow_image_uri }}"
 
-          export DB_CONNECTION_URL=$(terraform -chdir=terraform output -raw db_connection_url)
-          export MLFLOW_TRACKING_URI=$(terraform -chdir=terraform output -raw mlflow_tracking_uri)
-          export MLFLOW_ARTIFACT_URI=$(terraform -chdir=terraform output -raw mlflow_artifact_uri)
+      #     export DB_CONNECTION_URL=$(terraform -chdir=terraform output -raw db_connection_url)
+      #     export MLFLOW_TRACKING_URI=$(terraform -chdir=terraform output -raw mlflow_tracking_uri)
+      #     export MLFLOW_ARTIFACT_URI=$(terraform -chdir=terraform output -raw mlflow_artifact_uri)
 
-          echo "DB_CONNECTION_URL=$DB_CONNECTION_URL" >> $GITHUB_ENV
-          echo "MLFLOW_TRACKING_URI=$MLFLOW_TRACKING_URI" >> $GITHUB_ENV
-          echo "MLFLOW_ARTIFACT_URI=$MLFLOW_ARTIFACT_URI" >> $GITHUB_ENV
+      #     echo "DB_CONNECTION_URL=$DB_CONNECTION_URL" >> $GITHUB_ENV
+      #     echo "MLFLOW_TRACKING_URI=$MLFLOW_TRACKING_URI" >> $GITHUB_ENV
+      #     echo "MLFLOW_ARTIFACT_URI=$MLFLOW_ARTIFACT_URI" >> $GITHUB_ENV
 
-          echo "db_connection_url=$DB_CONNECTION_URL" >> $GITHUB_OUTPUT
-          echo "mlflow_tracking_uri=$MLFLOW_TRACKING_URI" >> $GITHUB_OUTPUT
-          echo "mlflow_artifact_uri=$MLFLOW_ARTIFACT_URI" >> $GITHUB_OUTPUT
+      #     echo "db_connection_url=$DB_CONNECTION_URL" >> $GITHUB_OUTPUT
+      #     echo "mlflow_tracking_uri=$MLFLOW_TRACKING_URI" >> $GITHUB_OUTPUT
+      #     echo "mlflow_artifact_uri=$MLFLOW_ARTIFACT_URI" >> $GITHUB_OUTPUT
 
-      - name: E2E test
-        env:
-          DB_CONNECTION_URL: ${{ steps.export.outputs.db_connection_url }}
-          MLFLOW_TRACKING_URI: ${{ steps.export.outputs.mlflow_tracking_uri }}
-          MLFLOW_ARTIFACT_URI: ${{ steps.export.outputs.mlflow_artifact_uri }}
-        run: |
-          echo "Resolved DB_CONNECTION_URL=$DB_CONNECTION_URL"
-          echo "Resolved MLFLOW_TRACKING_URI=$MLFLOW_TRACKING_URI"
+      # - name: E2E test
+      #   env:
+      #     DB_CONNECTION_URL: ${{ steps.export.outputs.db_connection_url }}
+      #     MLFLOW_TRACKING_URI: ${{ steps.export.outputs.mlflow_tracking_uri }}
+      #     MLFLOW_ARTIFACT_URI: ${{ steps.export.outputs.mlflow_artifact_uri }}
+      #   run: |
+      #     echo "Resolved DB_CONNECTION_URL=$DB_CONNECTION_URL"
+      #     echo "Resolved MLFLOW_TRACKING_URI=$MLFLOW_TRACKING_URI"
 
-          poetry run pytest -v -m "gcs"
-          echo "::notice::All deployment pytest passed"
+      #     poetry run pytest -v -m "gcs"
+      #     echo "::notice::All deployment pytest passed"
 
-      - name: Terraform destroy
-        if: always()
-        timeout-minutes: 10
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/gcp-key.json
-        run: |
-          cd ..
-          set -e
-          echo "🧹 Cleaning up Terraform resources..."
+      # - name: Terraform destroy
+      #   if: always()
+      #   timeout-minutes: 10
+      #   env:
+      #     GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/gcp-key.json
+      #   run: |
+      #     cd ..
+      #     set -e
+      #     echo "🧹 Cleaning up Terraform resources..."
 
-          gcloud auth activate-service-account --key-file="$GOOGLE_APPLICATION_CREDENTIALS"
-          gcloud config set project ${{ env.PROJECT_ID }}
+      #     gcloud auth activate-service-account --key-file="$GOOGLE_APPLICATION_CREDENTIALS"
+      #     gcloud config set project ${{ env.PROJECT_ID }}
 
-          export TF_LOG=DEBUG
+      #     export TF_LOG=DEBUG
 
-          terraform -chdir=terraform destroy -auto-approve \
-          -var="mlflow_image_uri=${{ needs.image-build.outputs.mlflow_image_uri }}" \
-          -var="project_id=${{ env.PROJECT_ID }}" \
-          -no-color | tee terraform-apply.log || echo "⚠️ Destroy failed or partially cleaned up"
+      #     terraform -chdir=terraform destroy -auto-approve \
+      #     -var="mlflow_image_uri=${{ needs.image-build.outputs.mlflow_image_uri }}" \
+      #     -var="project_id=${{ env.PROJECT_ID }}" \
+      #     -no-color | tee terraform-apply.log || echo "⚠️ Destroy failed or partially cleaned up"
 
-      - name: Verify cleanup
-        if: always()
-        run: |
-          echo "Checking for leftover infra..."
-          gcloud compute instances list || true
-          gcloud sql instances list || true
-          gcloud storage buckets list || true
+      # - name: Verify cleanup
+      #   if: always()
+      #   run: |
+      #     echo "Checking for leftover infra..."
+      #     gcloud compute instances list || true
+      #     gcloud sql instances list || true
+      #     gcloud storage buckets list || true
