@@ -9,12 +9,16 @@ from sqlalchemy import MetaData
 from testcontainers.postgres import PostgresContainer
 
 from london_housing_ai.persistence import get_engine
+from london_housing_ai.train_main import main
+from argparse import Namespace
 
 
 @pytest.fixture(scope="module", autouse=True)
 def mlflow_uri(tmp_path_factory):
-    mlruns_dir = tmp_path_factory.mktemp("mlruns")
-    os.environ["MLFLOW_TRACKING_URI"] = f"file://{mlruns_dir}"
+    tracking_dir = tmp_path_factory.mktemp("mlruns")
+    artifacts_dir = tmp_path_factory.mktemp("mlartifacts")
+    os.environ["MLFLOW_TRACKING_URI"] = f"file://{tracking_dir}"
+    os.environ["MLFLOW_ARTIFACT_URI"] = f"file://{artifacts_dir}"
 
 
 postgres = PostgresContainer("postgres:16-alpine")
@@ -94,9 +98,9 @@ def test_train_main_e2e(request: pytest.FixtureRequest):
     assert "the experiment of model has completed." in result.stdout
 
 
-def test_train_main_e2e_local(request):
+def test_train_main_e2e_local(request: pytest.FixtureRequest, caplog):
     # Skip real GCS upload
-    with patch("london_housing_ai.file_injest.upload_parquet_to_gcs") as mock_upload:
+    with patch("london_housing_ai.train_main.upload_parquet_to_gcs") as mock_upload:
         mock_upload.return_value = None
 
         root = Path(request.config.rootpath)
@@ -105,25 +109,32 @@ def test_train_main_e2e_local(request):
         )
         csv_file = root / "tests" / "fixtures" / "sample_housing.csv"
 
-        env = os.environ
-        env["PYTHONPATH"] = str(Path(request.config.rootpath) / "src")
-
-        # now run the real training entry point
-        result = subprocess.run(
-            [
-                "python",
-                "-m",
-                "london_housing_ai.train_main",
-                "--config",
-                config_file,
-                "--csv",
-                csv_file,
-            ],
-            capture_output=True,
-            text=True,
-            timeout=120,
-            env=env,
+        # env = os.environ
+        # env["PYTHONPATH"] = str(Path(request.config.rootpath) / "src")
+        args = Namespace(
+            config=str(config_file),
+            csv=str(csv_file),
+            aug=None,
+            cleanup_local=False,
         )
+        main(args)
+    assert "the experiment of model has completed." in caplog.text
+    # now run the real training entry point
+    # result = subprocess.run(
+    #     [
+    #         "python",
+    #         "-m",
+    #         "london_housing_ai.train_main",
+    #         "--config",
+    #         config_file,
+    #         "--csv",
+    #         csv_file,
+    #     ],
+    #     capture_output=True,
+    #     text=True,
+    #     timeout=120,
+    #     env=env,
+    # )
 
-    assert result.returncode == 0
-    assert "the experiment of model has completed." in result.stdout
+    # assert result.returncode == 0
+    # assert "the experiment of model has completed." in result.stdout

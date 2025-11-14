@@ -59,6 +59,9 @@ def main(args: Namespace) -> None:  # noqa: C901
     config_path = root_path / args.config
     csv_path = root_path / args.csv
     data_path = root_path / "data_lake"
+    credential_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+    if credential_path and not os.path.isabs(credential_path):
+        credential_path = str(root_path / credential_path)
 
     engine = get_engine()
     ensure_checksum_table(engine)
@@ -95,7 +98,7 @@ def main(args: Namespace) -> None:  # noqa: C901
         upload_parquet_to_gcs(
             local_dir=parquet_dir,
             destination_blob_name=parquet_config.destination_blob_name,
-            credential_path=os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"),
+            credential_path=credential_path,
             cleanup=args.cleanup_local,
         )
         # -------end of gcs uploading
@@ -157,7 +160,7 @@ def main(args: Namespace) -> None:  # noqa: C901
             # log trained model into MLflow under consistent path
             mlflow_catboost.log_model(
                 cb_model=trainer.model,
-                artifact_path=os.getenv("MLFLOW_ARTIFACT_PATH", "catboost_model"),
+                name=os.getenv("MLFLOW_ARTIFACT_PATH", "catboost_model"),
                 input_example=training_df.iloc[:1],
             )
         except Exception as exc:
