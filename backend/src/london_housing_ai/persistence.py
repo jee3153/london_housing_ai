@@ -12,15 +12,23 @@ MAX_POSTGRES_IDENTIFIER_LENGTH = 63
 TABLE_NAME_PREFIX = "london_housing_"
 
 
+def _require_env(name: str) -> str:
+    value = os.getenv(name)
+    if not value:
+        raise RuntimeError(f"Environment variable '{name}' must be set for database connectivity.")
+    return value
+
+
 def get_engine() -> Engine:
-    db_url = os.getenv("DB_CONNECTION_URL")
+    db_url = os.getenv("DB_CONNECTION_URL") or os.getenv("DB_CONN")
     if db_url:
         return create_engine(db_url)
-    username = os.getenv("DB_USERNAME", "dbuser")
-    password = os.getenv("DB_PASSWORD", "password")
-    host = os.getenv("DB_HOST", "localhost")
-    port = os.getenv("DB_PORT", "5432")
-    db_name = os.getenv("DB_NAME", "postgres")
+
+    username = _require_env("DB_USERNAME")
+    password = _require_env("DB_PASSWORD")
+    host = _require_env("DB_HOST")
+    port = _require_env("DB_PORT")
+    db_name = _require_env("DB_NAME")
     return create_engine(f"postgresql://{username}:{password}@{host}:{port}/{db_name}")
 
 
