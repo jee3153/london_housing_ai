@@ -39,7 +39,7 @@ def test_mlflow_logging_end_to_end(tmp_path):
 
     # Run training
     model = PriceModel(cfg)
-    model.fit(df, checksum="dummy123")
+    model.train_and_evaluate(df, checksum="dummy123")
 
     with mlflow.start_run(run_name="unit_test") as run:
         logger = ExperimentLogger(model, run)
@@ -63,6 +63,6 @@ def test_mlflow_logging_end_to_end(tmp_path):
 
     # Check that all categories were logged
     assert "learning_rate" in params
-    assert "rmse" in metrics
+    assert "validation_rmse" in metrics
     artifact_names = [a.path for a in artifacts]
     assert any("feature_importance" in n for n in artifact_names)

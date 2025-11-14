@@ -17,7 +17,7 @@ class ExperimentLogger:
         self.model = model
         self.run = run
         self.output_dir = Path(output_dir) if output_dir else None
-        self.artifacts: List[Path] = model.log_data["artifacts"]
+        self.artifacts: List[Path] = self.model.log_data["artifacts"]
 
     def log_all(self) -> None:
         self._log_artifacts()

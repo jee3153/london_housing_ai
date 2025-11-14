@@ -1,4 +1,9 @@
 terraform {
+  backend "gcs" {
+    bucket = "london-housing-ai-terraform-state"
+    prefix = "infrastructure"
+  }
+
   required_providers {
     google = {
       source  = "hashicorp/google"

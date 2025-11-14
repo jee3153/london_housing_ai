@@ -3,7 +3,7 @@ output "db_connection_url" {
 }
 
 output "mlflow_tracking_uri" {
-  value = module.storage.data_lake_bucket_url
+  value = module.mlflow.mlflow_tracking_uri
 }
 
 output "mlflow_artifact_uri" {

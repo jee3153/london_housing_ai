@@ -1,13 +1,13 @@
 import argparse
 import asyncio
-import datetime
 import os
-import time
 from argparse import Namespace
 
 import mlflow
 import mlflow.catboost as mlflow_catboost
+import mlflow.exceptions
 from dotenv import load_dotenv
+from mlflow import MlflowClient
 
 from london_housing_ai.augmenters import add_floor_area
 from london_housing_ai.experiment_logger import ExperimentLogger
@@ -25,7 +25,6 @@ from london_housing_ai.loaders import (
 )
 from london_housing_ai.models import PriceModel
 from london_housing_ai.persistence import (
-    _get_table_name_from_date,
     dataset_already_persisted,
     ensure_checksum_table,
     get_dataset_from_db,
@@ -33,7 +32,6 @@ from london_housing_ai.persistence import (
     persist_dataset,
     record_checksum,
     reset_postgres,
-    table_exists,
 )
 from london_housing_ai.pipeline import (
     clean_dataset,
@@ -48,7 +46,7 @@ load_dotenv()
 logger = get_logger()
 
 
-def main(args: Namespace) -> None:
+def main(args: Namespace) -> None:  # noqa: C901
     if not args.config or not args.csv:
         raise ValueError(
             f"Argument value for config and csv are required. config='{args.config}', csv='{args.csv}'"
@@ -61,20 +59,20 @@ def main(args: Namespace) -> None:
     config_path = root_path / args.config
     csv_path = root_path / args.csv
     data_path = root_path / "data_lake"
+    credential_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+    if credential_path and not os.path.isabs(credential_path):
+        credential_path = str(root_path / credential_path)
 
     engine = get_engine()
     ensure_checksum_table(engine)
     checksum = file_sha256(csv_path)
-    table_name = _get_table_name_from_date(
-        datetime.date.fromtimestamp(time.time()).isoformat()
-    )
 
     # if dataset exists load dataset from db
-    if dataset_already_persisted(engine, checksum) or table_exists(engine, table_name):
+    if dataset_already_persisted(engine, checksum):
         logger.info(
             f"checksum '{checksum}' for '{csv_path}' is found, skipping cleaning and extraction."
         )
-        df = get_dataset_from_db(engine, table_name)
+        df = get_dataset_from_db(engine, checksum)
     else:
         logger.info(
             f"checksum '{checksum}' for '{csv_path}' is not found, proceeding cleaning and extraction."
@@ -100,9 +98,10 @@ def main(args: Namespace) -> None:
         upload_parquet_to_gcs(
             local_dir=parquet_dir,
             destination_blob_name=parquet_config.destination_blob_name,
-            credential_path=os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"),
+            credential_path=credential_path,
             cleanup=args.cleanup_local,
         )
+        # -------end of gcs uploading
 
         df = asyncio.run(
             feature_engineer_dataset(
@@ -134,28 +133,41 @@ def main(args: Namespace) -> None:
         # gold layer check-point
 
         # persist clean/merged dataset
-        persist_dataset(df, engine, table_name)
-        record_checksum(engine, checksum, table_name)
+        persist_dataset(df, engine, checksum)
+        record_checksum(engine, checksum)
 
     # model training
-    mlflow.set_experiment("LondonHousingAI")
-    mlflow.set_registry_uri(
-        os.getenv("MLFLOW_ARTIFACT_URI", "gs://london-housing-ai-artifacts")
-    )
+    client = MlflowClient()
+    EXPERIMENT_NAME = "LondonHousingAI"
+    artifact_location = os.getenv("MLFLOW_ARTIFACT_URI", "file:/mlruns")
+    try:
+        client.create_experiment(EXPERIMENT_NAME, artifact_location=artifact_location)
+    except mlflow.exceptions.RestException:
+        logger.info(
+            f"The experiment {EXPERIMENT_NAME} already exists. Skip creating experiment."
+        )
+
+    mlflow.set_experiment(experiment_name=EXPERIMENT_NAME)
 
     # start logging metadata as you train a model
     with mlflow.start_run(run_name="london_housing_run") as run:
         train_cfg = load_train_config(config_path)
         training_df = df_with_required_cols(df, train_cfg)
         trainer = PriceModel(train_cfg)
-        trainer.fit(training_df, checksum)
+        trainer.train_and_evaluate(training_df, checksum)
 
-        # log trained model into MLflow under consistent path
-        mlflow_catboost.log_model(
-            cb_model=trainer.model,
-            name="london_housing_model",
-            input_example=training_df.iloc[:1],
-        )
+        try:
+            # log trained model into MLflow under consistent path
+            mlflow_catboost.log_model(
+                cb_model=trainer.model,
+                name=os.getenv("MLFLOW_ARTIFACT_PATH", "catboost_model"),
+                input_example=training_df.iloc[:1],
+            )
+        except Exception as exc:
+            logger.exception(
+                f"Failed to log Catboost model to MLflow. caused by: {exc}"
+            )
+            raise
         experiment_logger = ExperimentLogger(trainer, run)
         experiment_logger.log_all()
         logger.info(f"the experiment of model has completed. run_id={run.info.run_id}")

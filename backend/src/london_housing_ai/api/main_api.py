@@ -1,20 +1,29 @@
+import os
+
 import mlflow.pyfunc
 import numpy as np
+from dotenv import load_dotenv
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from mlflow.tracking import MlflowClient
 from pydantic import BaseModel
 
 from london_housing_ai.predict import transform_to_training_features
 from london_housing_ai.utils.logger import get_logger
 
+load_dotenv()
 logger = get_logger()
 
-client = MlflowClient(tracking_uri="http://mlflow:5000")
+client = MlflowClient(tracking_uri=os.getenv("MLFLOW_TRACKING_URI"))
+experiment = client.get_experiment_by_name("LondonHousingAI")
+if experiment is None:
+    raise RuntimeError("There is no experiment done for LondonHousingAI")
+
 runs = client.search_runs(
-    experiment_ids=["0"],
+    experiment_ids=[experiment.experiment_id],
     filter_string="attributes.status = 'FINISHED'",
     order_by=["start_time DESC"],
-    max_results=1,
+    max_results=30,
 )
 
 if not runs:
@@ -23,9 +32,17 @@ if not runs:
     )
 run_id = runs[0].info.run_id
 # Load your MLflow model by run ID or local path
-model = mlflow.pyfunc.load_model(f"runs:/{run_id}/catboost_model")
+model = mlflow.pyfunc.load_model(f"runs:/{run_id}/{os.getenv("MLFLOW_ARTIFACT_PATH")}")
 
 app = FastAPI(title="London Housing Price Predictor")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 # Define input schema using Pydantic
@@ -48,3 +65,8 @@ def predict(data: HousingData):
     # Step 3: Predict
     preds = model.predict(features)
     return {"predicted_price": round(float(np.expm1(preds[0])), 2)}
+
+
+@app.get("/experiment_runs")
+def get_runs():
+    return runs

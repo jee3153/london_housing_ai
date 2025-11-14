@@ -1,45 +1,59 @@
-import datetime
 import os
-import re
-import time
 
 import pandas as pd
 from psycopg2.errors import UndefinedTable
-from sqlalchemy import Engine, create_engine, inspect, text
+from sqlalchemy import Engine, create_engine, text
 
 from london_housing_ai.utils.logger import get_logger
 
 logger = get_logger()
 
+MAX_POSTGRES_IDENTIFIER_LENGTH = 63
+TABLE_NAME_PREFIX = "london_housing_"
+
+
+def _require_env(name: str) -> str:
+    value = os.getenv(name)
+    if not value:
+        raise RuntimeError(
+            f"Environment variable '{name}' must be set for database connectivity."
+        )
+    return value
+
 
 def get_engine() -> Engine:
-    db_url = os.getenv("DB_CONNECTION_URL")
+    db_url = os.getenv("DB_CONNECTION_URL") or os.getenv("DB_CONN")
     if db_url:
+        logger.info(f"Creating engine for {db_url}")
         return create_engine(db_url)
-    username = os.getenv("DB_USERNAME", "dbuser")
-    password = os.getenv("DB_PASSWORD", "password")
-    host = os.getenv("DB_HOST", "localhost")
-    port = os.getenv("DB_PORT", "5432")
-    db_name = os.getenv("DB_NAME", "postgres")
-    return create_engine(f"postgresql://{username}:{password}@{host}:{port}/{db_name}")
+
+    username = _require_env("DB_USERNAME")
+    password = _require_env("DB_PASSWORD")
+    host = _require_env("DB_HOST")
+    port = _require_env("DB_PORT")
+    db_name = _require_env("DB_NAME")
+    db_url = f"postgresql://{username}:{password}@{host}:{port}/{db_name}"
+    logger.info(f"Creating engine for {db_url}")
+    return create_engine(db_url)
 
 
-def persist_dataset(df: pd.DataFrame, engine: Engine, table_name: str | None = None):
-    if table_name is None:
-        table_name = _get_table_name_from_date(
-            datetime.date.fromtimestamp(time.time()).isoformat()
-        )
+def persist_dataset(df: pd.DataFrame, engine: Engine, checksum: str):
+    if checksum is None:
+        raise RuntimeError("checksum table name is not provided.")
+    table_name = _table_name_from_checksum(checksum)
     try:
         df.to_sql(table_name, engine, index=False)
     except Exception:
         raise RuntimeError(f"failed to persist table {table_name} to db.")
 
 
-def get_dataset_from_db(engine, table_name: str | None = None) -> pd.DataFrame:
-    if table_name is None:
-        table_name = _get_table_name_from_date(
-            datetime.date.fromtimestamp(time.time()).isoformat()
+def get_dataset_from_db(engine: Engine, checksum: str | None = None) -> pd.DataFrame:
+    if checksum is None:
+        raise RuntimeError(
+            "checksum is not provided hence table name wouldn't be known."
         )
+
+    table_name = _table_name_from_checksum(checksum)
     try:
         return pd.read_sql_query(f"SELECT * FROM {table_name}", engine)
     except UndefinedTable as e:
@@ -50,9 +64,12 @@ def get_dataset_from_db(engine, table_name: str | None = None) -> pd.DataFrame:
         )
 
 
-def _get_table_name_from_date(today_iso: str) -> str:
-    date = re.sub(r"-", "_", today_iso)
-    return f"london_housing_{date}"
+def _table_name_from_checksum(checksum: str) -> str:
+    """Return a legal Postgres table name derived from the dataset checksum."""
+    suffix_len = MAX_POSTGRES_IDENTIFIER_LENGTH - len(TABLE_NAME_PREFIX)
+    if suffix_len <= 0:
+        raise RuntimeError("Invalid table name prefix; exceeds PostgreSQL limit.")
+    return f"{TABLE_NAME_PREFIX}{checksum[:suffix_len]}"
 
 
 def ensure_checksum_table(engine: Engine) -> None:
@@ -75,25 +92,15 @@ def dataset_already_persisted(engine: Engine, checksum: str) -> bool:
         return conn.execute(text(sql), {"h": checksum}).first() is not None
 
 
-def record_checksum(
-    engine: Engine,
-    checksum: str,
-    table_name: str = _get_table_name_from_date(
-        datetime.date.fromtimestamp(time.time()).isoformat()
-    ),
-) -> None:
+def record_checksum(engine: Engine, checksum: str) -> None:
+    table_name = _table_name_from_checksum(checksum)
     sql = """
         INSERT INTO dataset_hashes(hash, table_name)
         VALUES (:h, :t)
-        ON CONFLICT (hash) DO NOTHING
+        ON CONFLICT (hash) DO UPDATE SET table_name = EXCLUDED.table_name
     """
     with engine.begin() as conn:
         conn.execute(text(sql), {"h": checksum, "t": table_name})
-
-
-def table_exists(engine: Engine, table_name: str) -> bool:
-    inspector = inspect(engine)
-    return inspector.has_table(table_name)
 
 
 def reset_postgres(engine: Engine):
