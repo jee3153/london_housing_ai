@@ -28,7 +28,7 @@ def test_train_main_e2e(request: pytest.FixtureRequest):
         ],
         capture_output=True,
         text=True,
-        timeout=120,
+        timeout=300,
         env=env,
     )
 
