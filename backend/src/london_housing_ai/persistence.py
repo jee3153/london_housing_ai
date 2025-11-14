@@ -15,7 +15,9 @@ TABLE_NAME_PREFIX = "london_housing_"
 def _require_env(name: str) -> str:
     value = os.getenv(name)
     if not value:
-        raise RuntimeError(f"Environment variable '{name}' must be set for database connectivity.")
+        raise RuntimeError(
+            f"Environment variable '{name}' must be set for database connectivity."
+        )
     return value
 
 

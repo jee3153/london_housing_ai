@@ -190,6 +190,9 @@ jobs:
           MLFLOW_TRACKING_URI: ${{ steps.export.outputs.mlflow_tracking_uri }}
           MLFLOW_ARTIFACT_URI: ${{ steps.export.outputs.mlflow_artifact_uri }}
         run: |
+          echo "Resolved DB_CONNECTION_URL=$DB_CONNECTION_URL"
+          echo "Resolved MLFLOW_TRACKING_URI=$MLFLOW_TRACKING_URI"
+
           poetry run pytest -v -m "gcs"
           echo "::notice::All deployment pytest passed"
 
