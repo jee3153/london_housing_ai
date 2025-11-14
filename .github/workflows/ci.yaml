@@ -180,8 +180,10 @@ jobs:
           export MLFLOW_TRACKING_URI=$(terraform -chdir=terraform output -raw mlflow_tracking_uri)
           export MLFLOW_ARTIFACT_URI=$(terraform -chdir=terraform output -raw mlflow_artifact_uri)
 
+          echo "DB_CONNECTION_URL=$DB_CONNECTION_URL" >> $GITHUB_ENV
           echo "MLFLOW_TRACKING_URI=$MLFLOW_TRACKING_URI" >> $GITHUB_ENV
           echo "MLFLOW_ARTIFACT_URI=$MLFLOW_ARTIFACT_URI" >> $GITHUB_ENV
+
           echo "db_connection_url=$DB_CONNECTION_URL" >> $GITHUB_OUTPUT
           echo "mlflow_tracking_uri=$MLFLOW_TRACKING_URI" >> $GITHUB_OUTPUT
           echo "mlflow_artifact_uri=$MLFLOW_ARTIFACT_URI" >> $GITHUB_OUTPUT
