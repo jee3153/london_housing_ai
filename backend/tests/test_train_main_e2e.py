@@ -1,6 +1,7 @@
 import os
 import shutil
 import subprocess
+from argparse import Namespace
 from pathlib import Path
 from unittest.mock import patch
 
@@ -10,7 +11,6 @@ from testcontainers.postgres import PostgresContainer
 
 from london_housing_ai.persistence import get_engine
 from london_housing_ai.train_main import main
-from argparse import Namespace
 
 
 @pytest.fixture(scope="module", autouse=True)
