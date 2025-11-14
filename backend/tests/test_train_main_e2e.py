@@ -26,7 +26,6 @@ def test_train_main_e2e(request: pytest.FixtureRequest):
             "--csv",
             csv_file,
         ],
-        capture_output=True,
         text=True,
         timeout=900,
         env=env,
