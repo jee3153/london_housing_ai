@@ -29,6 +29,7 @@ resource "google_compute_instance" "mlflow_server" {
 
   network_interface {
     network = var.network_private_ip
+    access_config {}
   }
 
   service_account {
@@ -64,5 +65,4 @@ resource "google_compute_instance" "mlflow_server" {
     echo "MLflow server container launched."
     SCRIPT
 }
-
 
