@@ -182,6 +182,10 @@ jobs:
           echo "MLFLOW_ARTIFACT_URI=$MLFLOW_ARTIFACT_URI" >> $GITHUB_ENV
 
       - name: E2E test
+        env:
+          DB_CONNECTION_URL: ${{ steps.export.outputs.db_connection_url }}
+          MLFLOW_TRACKING_URI: ${{ steps.export.outputs.mlflow_tracking_uri }}
+          MLFLOW_ARTIFACT_URI: ${{ steps.export.outputs.mlflow_artifact_uri }}
         run: |
           poetry run pytest -v -m "gcs"
           echo "::notice::All deployment pytest passed"
