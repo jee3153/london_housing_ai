@@ -6,7 +6,7 @@ export type ChartConfigProps = {
     desktop: ChartConfig
 }
 
-export type ModelPerformanceProps = {
+export type ModelExperimentProps = {
     runs: MlflowRunResponse[] | null;
 };
 

@@ -10,12 +10,12 @@ import {
   TableRow,
 } from "../ui/table"
 import type { ChartConfig } from "../ui/chart"
-import type { ModelPerformanceProps } from '../../types/props'
+import type { ModelExperimentProps } from '../../types/props'
 import { LineChartCard } from '../LineChartCard'
 import ModelMetricCard from "./ModelMetricCard";
 import { getReadableTimeStamp } from "../../lib/utils";
 
-export default function ModelPerformance({ runs }: ModelPerformanceProps) {
+export default function ModelPerformance({ runs }: ModelExperimentProps) {
   if (runs == null) return (
     <p className="mt-4 text-sm text-muted-foreground">No MLflow runs found yet.</p>
   )
