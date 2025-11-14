@@ -34,7 +34,9 @@ def db_connection(request: pytest.FixtureRequest):
     # register teardown
     request.addfinalizer(remove_container)
 
-    os.environ["DB_CONN"] = postgres.get_connection_url()
+    db_url = postgres.get_connection_url()
+    os.environ["DB_CONN"] = db_url
+    os.environ["DB_CONNECTION_URL"] = db_url
     os.environ["DB_HOST"] = postgres.get_container_host_ip()
     os.environ["DB_PORT"] = str(postgres.get_exposed_port(5432))
     os.environ["DB_USERNAME"] = postgres.username
@@ -109,8 +111,6 @@ def test_train_main_e2e_local(request: pytest.FixtureRequest, caplog):
         )
         csv_file = root / "tests" / "fixtures" / "sample_housing.csv"
 
-        # env = os.environ
-        # env["PYTHONPATH"] = str(Path(request.config.rootpath) / "src")
         args = Namespace(
             config=str(config_file),
             csv=str(csv_file),
@@ -119,22 +119,3 @@ def test_train_main_e2e_local(request: pytest.FixtureRequest, caplog):
         )
         main(args)
     assert "the experiment of model has completed." in caplog.text
-    # now run the real training entry point
-    # result = subprocess.run(
-    #     [
-    #         "python",
-    #         "-m",
-    #         "london_housing_ai.train_main",
-    #         "--config",
-    #         config_file,
-    #         "--csv",
-    #         csv_file,
-    #     ],
-    #     capture_output=True,
-    #     text=True,
-    #     timeout=120,
-    #     env=env,
-    # )
-
-    # assert result.returncode == 0
-    # assert "the experiment of model has completed." in result.stdout
