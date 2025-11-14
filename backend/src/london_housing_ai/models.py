@@ -1,11 +1,12 @@
-from pathlib import Path
-from typing import Any, Tuple, Union, Dict
 from enum import Enum
+from pathlib import Path
+from typing import Any, Dict, Tuple, Union
+
 import numpy as np
 import pandas as pd
 from catboost import CatBoostRegressor
 from numpy.typing import NDArray
-from sklearn.metrics import mean_squared_error, root_mean_squared_error, r2_score
+from sklearn.metrics import mean_squared_error, r2_score, root_mean_squared_error
 from sklearn.model_selection import StratifiedShuffleSplit
 
 from london_housing_ai.config_schemas.TrainConfig import TrainConfig

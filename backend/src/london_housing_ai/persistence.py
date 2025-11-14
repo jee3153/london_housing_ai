@@ -2,7 +2,7 @@ import os
 
 import pandas as pd
 from psycopg2.errors import UndefinedTable
-from sqlalchemy import Engine, create_engine, inspect, text
+from sqlalchemy import Engine, create_engine, text
 
 from london_housing_ai.utils.logger import get_logger
 

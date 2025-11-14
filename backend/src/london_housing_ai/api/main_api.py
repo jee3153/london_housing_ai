@@ -1,11 +1,12 @@
 import os
-import numpy as np
+
 import mlflow.pyfunc
+import numpy as np
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from mlflow.tracking import MlflowClient
 from pydantic import BaseModel
-from dotenv import load_dotenv
 
 from london_housing_ai.predict import transform_to_training_features
 from london_housing_ai.utils.logger import get_logger

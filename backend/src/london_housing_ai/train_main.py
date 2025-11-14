@@ -1,15 +1,13 @@
 import argparse
 import asyncio
-import datetime
 import os
-import time
 from argparse import Namespace
 
 import mlflow
-from mlflow import MlflowClient
 import mlflow.catboost as mlflow_catboost
 import mlflow.exceptions
 from dotenv import load_dotenv
+from mlflow import MlflowClient
 
 from london_housing_ai.augmenters import add_floor_area
 from london_housing_ai.experiment_logger import ExperimentLogger
@@ -48,7 +46,7 @@ load_dotenv()
 logger = get_logger()
 
 
-def main(args: Namespace) -> None:
+def main(args: Namespace) -> None:  # noqa: C901
     if not args.config or not args.csv:
         raise ValueError(
             f"Argument value for config and csv are required. config='{args.config}', csv='{args.csv}'"
