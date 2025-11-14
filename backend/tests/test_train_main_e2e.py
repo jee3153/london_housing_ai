@@ -26,6 +26,11 @@ postgres = PostgresContainer("postgres:16-alpine")
 
 @pytest.fixture(scope="module", autouse=True)
 def db_connection(request: pytest.FixtureRequest):
+    if request.node.get_closest_marker("gcs"):
+        # Deploymenent tests use Terraform-provisioned DB. Leave env as-is
+        yield
+        return
+
     postgres.start()
 
     def remove_container():
@@ -34,9 +39,7 @@ def db_connection(request: pytest.FixtureRequest):
     # register teardown
     request.addfinalizer(remove_container)
 
-    db_url = postgres.get_connection_url()
-    os.environ["DB_CONN"] = db_url
-    os.environ["DB_CONNECTION_URL"] = db_url
+    os.environ["DB_CONN"] = postgres.get_connection_url()
     os.environ["DB_HOST"] = postgres.get_container_host_ip()
     os.environ["DB_PORT"] = str(postgres.get_exposed_port(5432))
     os.environ["DB_USERNAME"] = postgres.username
