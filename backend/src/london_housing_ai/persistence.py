@@ -24,6 +24,7 @@ def _require_env(name: str) -> str:
 def get_engine() -> Engine:
     db_url = os.getenv("DB_CONNECTION_URL") or os.getenv("DB_CONN")
     if db_url:
+        logger.info(f"Creating engine for {db_url}")
         return create_engine(db_url)
 
     username = _require_env("DB_USERNAME")
@@ -31,7 +32,9 @@ def get_engine() -> Engine:
     host = _require_env("DB_HOST")
     port = _require_env("DB_PORT")
     db_name = _require_env("DB_NAME")
-    return create_engine(f"postgresql://{username}:{password}@{host}:{port}/{db_name}")
+    db_url = f"postgresql://{username}:{password}@{host}:{port}/{db_name}"
+    logger.info(f"Creating engine for {db_url}")
+    return create_engine(db_url)
 
 
 def persist_dataset(df: pd.DataFrame, engine: Engine, checksum: str):
