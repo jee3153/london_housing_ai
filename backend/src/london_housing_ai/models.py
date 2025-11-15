@@ -9,8 +9,8 @@ from sklearn.metrics import mean_squared_error, r2_score, root_mean_squared_erro
 from sklearn.model_selection import StratifiedShuffleSplit
 
 from london_housing_ai.config_schemas.TrainConfig import TrainConfig
-from london_housing_ai.utils.logger import get_logger
 from london_housing_ai.utils.create_files import generate_artifact_from_df
+from london_housing_ai.utils.logger import get_logger
 
 logger = get_logger()
 

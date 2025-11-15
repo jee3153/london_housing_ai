@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 from mlflow import MlflowClient
 
 from london_housing_ai.augmenters import add_floor_area
+from london_housing_ai.data_quality_reporter import generate_data_quality_report
 from london_housing_ai.experiment_logger import ExperimentLogger
 from london_housing_ai.file_injest import (
     upload_parquet_to_gcs,
@@ -41,7 +42,6 @@ from london_housing_ai.pipeline import (
 from london_housing_ai.utils.checksum import file_sha256, unique_filename_from_sha256
 from london_housing_ai.utils.logger import get_logger
 from london_housing_ai.utils.paths import get_project_root
-from london_housing_ai.data_quality_reporter import generate_data_quality_report
 
 load_dotenv()
 logger = get_logger()

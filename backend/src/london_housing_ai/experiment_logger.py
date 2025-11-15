@@ -2,11 +2,12 @@ from pathlib import Path
 from typing import List, Optional
 
 import mlflow
-from mlflow.tracking.fluent import ActiveRun
 from mlflow.data.pandas_dataset import from_pandas
+from mlflow.tracking.fluent import ActiveRun
+from pandas import DataFrame
+
 from london_housing_ai.models import PriceModel
 from london_housing_ai.utils.logger import get_logger
-from pandas import DataFrame
 
 logger = get_logger()
 

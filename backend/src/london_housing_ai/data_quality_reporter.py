@@ -1,8 +1,10 @@
 from typing import List
-from pandas import DataFrame
+
 import numpy as np
-from sklearn.model_selection import train_test_split
+from pandas import DataFrame
 from scipy.stats import ks_2samp
+from sklearn.model_selection import train_test_split
+
 from london_housing_ai.utils.create_files import generate_artifact_from_payload
 
 

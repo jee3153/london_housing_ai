@@ -3,14 +3,13 @@ import os
 import mlflow.pyfunc
 import numpy as np
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from mlflow.tracking import MlflowClient
 from pydantic import BaseModel
 
 from london_housing_ai.predict import transform_to_training_features
 from london_housing_ai.utils.logger import get_logger
-from fastapi import HTTPException
 
 load_dotenv()
 logger = get_logger()

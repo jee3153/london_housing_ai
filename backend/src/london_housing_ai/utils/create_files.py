@@ -1,7 +1,8 @@
-from pathlib import Path
-from pandas import DataFrame
-from typing import Dict, Any
 import json
+from pathlib import Path
+from typing import Any, Dict
+
+from pandas import DataFrame
 
 ARTIFACT_DIR = Path("artifacts")
 
