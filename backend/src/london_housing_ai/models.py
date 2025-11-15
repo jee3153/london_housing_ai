@@ -1,5 +1,4 @@
 from enum import Enum
-from pathlib import Path
 from typing import Any, Dict, Tuple, Union
 
 import numpy as np
@@ -11,6 +10,7 @@ from sklearn.model_selection import StratifiedShuffleSplit
 
 from london_housing_ai.config_schemas.TrainConfig import TrainConfig
 from london_housing_ai.utils.logger import get_logger
+from london_housing_ai.utils.create_files import generate_artifact_from_df
 
 logger = get_logger()
 
@@ -130,15 +130,7 @@ class PriceModel:
         ).sort_values("importance", ascending=False)
 
         # Save to a file inside your output directory
-        output_dir = Path("outputs")
-        output_dir.mkdir(parents=True, exist_ok=True)
-        feature_importance_path = output_dir / "feature_importance.json"
-        feature_importance_df.to_json(
-            feature_importance_path, orient="records", indent=2
-        )
-
-        # store the path (not the JSON string)
-        self.log_data["artifacts"].append(feature_importance_path)
+        generate_artifact_from_df("feature_importance.json", feature_importance_df)
 
         return y_train_true, y_train_pred
 

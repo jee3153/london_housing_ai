@@ -10,6 +10,7 @@ from pydantic import BaseModel
 
 from london_housing_ai.predict import transform_to_training_features
 from london_housing_ai.utils.logger import get_logger
+from fastapi import HTTPException
 
 load_dotenv()
 logger = get_logger()
@@ -30,9 +31,6 @@ if not runs:
     raise RuntimeError(
         "No MLflow runs found! train and log a model before starting the API."
     )
-run_id = runs[0].info.run_id
-# Load your MLflow model by run ID or local path
-model = mlflow.pyfunc.load_model(f"runs:/{run_id}/{os.getenv("MLFLOW_ARTIFACT_PATH")}")
 
 app = FastAPI(title="London Housing Price Predictor")
 
@@ -55,6 +53,16 @@ class HousingData(BaseModel):
 
 @app.post("/predict")
 def predict(data: HousingData):
+    if not runs:
+        raise HTTPException(status_code=503, detail="No trained runs available")
+
+    run_id = runs[0].info.run_id
+
+    # Load your MLflow model by run ID or local path
+    model = mlflow.pyfunc.load_model(
+        f"runs:/{run_id}/{os.getenv("MLFLOW_ARTIFACT_PATH")}"
+    )
+
     # Step 1: Convert user input
     user_input = data.model_dump()
 
@@ -62,11 +70,26 @@ def predict(data: HousingData):
     features = transform_to_training_features(user_input)
     logger.info(features.to_dict(orient="records"))
     logger.info(features.dtypes)
+
     # Step 3: Predict
-    preds = model.predict(features)
+    try:
+        preds = model.predict(features)
+    except Exception as e:
+        logger.exception(f"Prediction failed due to {e}")
+        raise HTTPException(status_code=500, detail="Prediction failed")
+
     return {"predicted_price": round(float(np.expm1(preds[0])), 2)}
 
 
 @app.get("/experiment_runs")
 def get_runs():
     return runs
+
+
+@app.get("/artifacts")
+def get_artifacts():
+    if not runs:
+        return {"messege": "No artifacts available", "artifacts": []}
+
+    last_run_id = runs[-1].info.run_id
+    return {"artifacts": client.list_artifacts(last_run_id)}
