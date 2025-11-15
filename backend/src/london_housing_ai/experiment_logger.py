@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 
 import mlflow
 from mlflow.data.pandas_dataset import from_pandas
@@ -23,8 +23,6 @@ class ExperimentLogger:
         self.model = model
         self.run = run
         self.dataset = from_pandas(dataset)
-
-        # add all generated artifacts under /artifacts directory
         if artifact_dir.exists():
             self.artifact_dir = artifact_dir
             self.artifacts: List[str] = [
