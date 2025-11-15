@@ -13,7 +13,7 @@ from london_housing_ai.config_schemas.TrainConfig import TrainConfig
 
 
 def load_dataset(
-    path: Path, schema: List[str], columns_to_load: List[str]
+    path: Path, schema: List[str] = [], columns_to_load: List[str] = []
 ) -> DataFrame:
     is_noheader = path.suffixes == [".noheader", ".csv"]
     try:
@@ -22,7 +22,7 @@ def load_dataset(
             header=None if is_noheader else 0,
             names=schema,
             usecols=columns_to_load,
-        )
+        ).copy()
     except Exception as e:
         raise RuntimeError(f"schema and column header doesn't match.: {e}")
 

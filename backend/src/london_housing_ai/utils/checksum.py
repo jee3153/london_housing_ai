@@ -1,4 +1,5 @@
 import hashlib
+from datetime import datetime, timezone
 from pathlib import Path
 
 READ_BYTES = "rb"
@@ -16,3 +17,9 @@ def file_sha256(path: Path, chunk_mb: int = 4) -> str:
         for chunk in iter(lambda: f.read(chunk_mb * ONE_MiB), b""):
             h.update(chunk)
     return h.hexdigest()
+
+
+def unique_filename_from_sha256(
+    prefix: str, checksum: str, extension: str = "json"
+) -> str:
+    return f"{prefix}_{checksum[:16]}_{datetime.now(timezone.utc)}.{extension}"
