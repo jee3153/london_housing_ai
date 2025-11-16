@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 from mlflow import MlflowClient
 
 from london_housing_ai.augmenters import add_floor_area
+from london_housing_ai.data_quality_reporter import generate_data_quality_report
 from london_housing_ai.experiment_logger import ExperimentLogger
 from london_housing_ai.file_injest import (
     upload_parquet_to_gcs,
@@ -38,7 +39,7 @@ from london_housing_ai.pipeline import (
     df_with_required_cols,
     feature_engineer_dataset,
 )
-from london_housing_ai.utils.checksum import file_sha256
+from london_housing_ai.utils.checksum import file_sha256, unique_filename_from_sha256
 from london_housing_ai.utils.logger import get_logger
 from london_housing_ai.utils.paths import get_project_root
 
@@ -66,6 +67,10 @@ def main(args: Namespace) -> None:  # noqa: C901
     engine = get_engine()
     ensure_checksum_table(engine)
     checksum = file_sha256(csv_path)
+    cleaning_config = load_cleaning_config(config_path)
+    raw_data = load_dataset(
+        csv_path, cleaning_config.col_headers, cleaning_config.loading_cols
+    )
 
     # if dataset exists load dataset from db
     if dataset_already_persisted(engine, checksum):
@@ -79,11 +84,7 @@ def main(args: Namespace) -> None:  # noqa: C901
         )
 
         # if dataset not exist, proceed cleaning and data extraction
-        cleaning_config = load_cleaning_config(config_path)
-        df = load_dataset(
-            csv_path, cleaning_config.col_headers, cleaning_config.loading_cols
-        )
-        df = clean_dataset(df, cleaning_config)
+        df = clean_dataset(raw_data.copy(), cleaning_config)
 
         # ------comment it only when gcs uploading is required.
         # silver layer check-point
@@ -164,11 +165,17 @@ def main(args: Namespace) -> None:  # noqa: C901
                 input_example=training_df.iloc[:1],
             )
         except Exception as exc:
-            logger.exception(
-                f"Failed to log Catboost model to MLflow. caused by: {exc}"
-            )
-            raise
-        experiment_logger = ExperimentLogger(trainer, run)
+            msg = f"Failed to log Catboost model to MLflow. caused by: {exc}"
+            logger.exception(msg)
+            raise RuntimeError(msg)
+
+        generate_data_quality_report(
+            raw_data.copy(), unique_filename_from_sha256("data_quality", checksum)
+        )
+
+        experiment_logger = ExperimentLogger(
+            trainer, run, raw_data, root_path / "artifacts"
+        )
         experiment_logger.log_all()
         logger.info(f"the experiment of model has completed. run_id={run.info.run_id}")
 
