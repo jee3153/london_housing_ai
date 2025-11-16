@@ -45,9 +45,7 @@ def test_generate_data_quality_report_creates_serializable_payload(
     assert isinstance(payload["missing"]["price"], float)
     assert isinstance(payload["outliers"]["price"], int)
     assert isinstance(payload["train_val_drift"]["price"], float)
-    assert isinstance(
-        payload["category_distribution"]["property_type"]["flat"], float
-    )
+    assert isinstance(payload["category_distribution"]["property_type"]["flat"], float)
 
     # numeric stats should be list of json-serializable dicts
     assert isinstance(payload["numeric_stats"], list)
