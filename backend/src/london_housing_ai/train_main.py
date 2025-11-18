@@ -88,20 +88,20 @@ def main(args: Namespace) -> None:  # noqa: C901
 
         # ------comment it only when gcs uploading is required.
         # silver layer check-point
-        parquet_config = load_parquet_config(config_path)
-        parquet_dir = data_path / "silver"
+        # parquet_config = load_parquet_config(config_path)
+        # parquet_dir = data_path / "silver"
 
-        write_df_to_partitioned_parquet(
-            df=df,
-            out_dir=parquet_dir,
-            partition_cols=parquet_config.silver_partition_cols,
-        )
-        upload_parquet_to_gcs(
-            local_dir=parquet_dir,
-            destination_blob_name=parquet_config.destination_blob_name,
-            credential_path=credential_path,
-            cleanup=args.cleanup_local,
-        )
+        # write_df_to_partitioned_parquet(
+        #     df=df,
+        #     out_dir=parquet_dir,
+        #     partition_cols=parquet_config.silver_partition_cols,
+        # )
+        # upload_parquet_to_gcs(
+        #     local_dir=parquet_dir,
+        #     destination_blob_name=parquet_config.destination_blob_name,
+        #     credential_path=credential_path,
+        #     cleanup=args.cleanup_local,
+        # )
         # -------end of gcs uploading
 
         df = asyncio.run(
