@@ -4,6 +4,7 @@ import { OVERVIEW, MODEL_COMPARISON, DATA_QUALITY, UPLOAD_DATA } from "../lib/co
 import type { MlflowRunListResponse, MlflowRunResponse } from "../types/mlflow";
 import ModelPerformance from "./model_performance/ModelPerformance";
 import { TabsContent } from "./ui/tabs";
+import DataQuality from "./data_quality/DataQuality";
 
 
 function PageContents() {
@@ -39,17 +40,22 @@ function PageContents() {
       {error && <div className="text-red-500">{error}</div>}
 
       <TabsContent value={OVERVIEW}> … overview section … </TabsContent>
+
       <TabsContent value={MODEL_COMPARISON}>
         <ModelPerformance runs={runs} />
       </TabsContent>
-      <TabsContent value={DATA_QUALITY}> … data quality section … </TabsContent>
+
+      <TabsContent value={DATA_QUALITY}>
+        <DataQuality runs={runs} />
+      </TabsContent>
+
       <TabsContent value={UPLOAD_DATA}> … upload data section … </TabsContent>
     </div>
   );
 }
 
 async function getLatestRuns(): Promise<MlflowRunResponse[]> {
-  const response = await fetch("http://localhost:7777/experiment_runs");
+  const response = await fetch("http://localhost:7777/experiments");
   if (!response.ok) {
     throw new Error(`Failed to fetch run metadata: ${response.statusText}`);
   }

@@ -82,7 +82,7 @@ def predict(data: HousingData):
     return {"predicted_price": round(float(np.expm1(preds[0])), 2)}
 
 
-@app.get("/experiment_runs")
+@app.get("/experiments")
 def get_runs():
     return runs
 
@@ -90,7 +90,7 @@ def get_runs():
 @app.get("/artifacts/data_quality")
 def get_data_quality_artifacts():
     if not runs:
-        return {"messege": "No artifacts available", "artifacts": []}
+        return {"messege": "No artifacts available"}
     last_run_id = runs[-1].info.run_id
     data_quality_file = [
         artifact_name.path
@@ -112,16 +112,14 @@ def get_data_quality_artifacts():
             "message": "No data quality file available to download for this experiment run"
         }
 
-    response = {}
+    response = {"filename": data_quality_file_name}
     try:
         with open(local_data_quality_file, "r") as f:
-            response[data_quality_file_name] = json.load(f)
+            response = {**response, **json.load(f)}
     except FileNotFoundError as err:
         raise FileNotFoundError(
             f"File at {local_data_quality_file} was not found. Error message: {err}"
         )
-    except:
-        # Fallback for non-JSON files
-        with open(local_data_quality_file, "r") as f:
-            response[data_quality_file_name] = f.read()
+    except Exception as err:
+        raise Exception(f"Fetching data quality metadata failed due to {err}")
     return response

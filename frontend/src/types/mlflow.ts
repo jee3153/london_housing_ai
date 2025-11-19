@@ -1,3 +1,4 @@
+import DataQuality from '../components/data_quality/DataQuality';
 export interface MlflowRunMetrics {
   test_rmse: number;
   test_mse: number;
@@ -49,3 +50,78 @@ export interface MlflowRunInfo {
 }
 
 export type MlflowRunListResponse = MlflowRunResponse[];
+
+export interface DataQualityMissingColumns {
+  postcode: number;
+  price: number;
+  data: number;
+  property_type: number;
+  "old/new": number;
+  duration: number;
+  country: number;
+}
+
+export interface DataQualitySchemaSummary {
+  price: string;
+  date: string;
+  postcode: string;
+  property_type: string;
+  "old/new": string;
+  duration: string;
+  country: string;
+}
+
+export interface DataQualityNumericStat {
+  column: string;
+  count: string;
+  mean: string;
+  std: string;
+  min: string;
+  "25%": string;
+  "50%": string;
+  "75%": string;
+  max: string;
+}
+
+interface DataQualityOutliers {
+  price: string;
+}
+
+interface DataQualityTrainValueDrift {
+  price: string;
+}
+
+interface DataQualityPropertyType {
+  "Terraced": string;
+  "Semi-detached": string;
+  "Detached": string;
+  "Flats / maisonette": string;
+  "Other": string;
+}
+
+interface DataQualityBuildAgeType {
+  "Historic property": string;
+  "New build": string;
+}
+
+interface DataQualityDuration {
+  "Freehold": string;
+  "Leasehold": string;
+}
+
+interface DataQualityCategoryDistribution {
+  property_type: DataQualityPropertyType;
+  "old/new": DataQualityBuildAgeType;
+  duration: DataQualityDuration;
+}
+
+export interface MlflowDataQualityPayload {
+  filename: string;
+  missing: DataQualityMissingColumns;
+  schema_summary: DataQualitySchemaSummary;
+  numeric_stats: DataQualityNumericStat[];
+  outliers: DataQualityOutliers;
+  train_val_drift: DataQualityTrainValueDrift;
+  category_distribution: DataQualityCategoryDistribution;
+  message?: string;
+}
