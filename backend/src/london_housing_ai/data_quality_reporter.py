@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List, Union, Dict
 
 import numpy as np
 from pandas import DataFrame, Index
@@ -11,16 +11,17 @@ from numpy import integer, floating
 
 
 def generate_data_quality_report(df: DataFrame, filename: str):
-
-    missing = df.isna().mean().sort_values(ascending=False).to_dict()
     numeric_cols = df.select_dtypes(include=[np.number]).columns
     train_df, val_df = train_test_split(df, test_size=0.2, random_state=42)
 
     cat_cols = _categorical_columns(df)
 
     report = {
-        "missing": {k: _truncate_numeric(v) for k, v in missing.items()},
-        "schema_summary": {k: str(v) for k, v in df.dtypes.to_dict().items()},
+        "missing": _build_missing_data(df),
+        "schema_summary": {
+            "counts": {"columns": str(len(df.columns)), "rows": str(len(df.index))},
+            "columns": {k: str(v) for k, v in df.dtypes.to_dict().items()},
+        },
         "numeric_stats": _build_numeric_stats(df, numeric_cols),
         "outliers": {col: _count_outliers(df, col) for col in numeric_cols},
         "train_val_drift": {
@@ -39,6 +40,27 @@ def generate_data_quality_report(df: DataFrame, filename: str):
     generate_artifact_from_payload(filename, report)
 
 
+def _build_missing_data(df: DataFrame) -> List[Dict[str, str]]:
+    missing_count = df.isna().sum().sort_values(ascending=False).to_dict()
+    missing_percentage = df.isna().mean().sort_values(ascending=False).to_dict()
+    missing_data = []
+
+    for count_pair, percentage_pair in zip(
+        missing_count.items(), missing_percentage.items()
+    ):
+        col_name, count = count_pair
+        _, percentage = percentage_pair
+        missing_data.append(
+            {
+                "column": str(col_name),
+                "count": str(count),
+                "percentage": _truncate_numeric(percentage * 100),
+            }
+        )
+
+    return missing_data
+
+
 def _convert_to_readable_cat(category_name: str, column: str) -> str:
     property_type_code = {
         "D": "Detached",
@@ -51,11 +73,12 @@ def _convert_to_readable_cat(category_name: str, column: str) -> str:
     is_new_build = {"N": "Historic property", "Y": "New build"}
     if column == "property_type" and category_name in property_type_code.keys():
         return property_type_code[category_name]
-    if column == "duration" and category_name in duration_code.keys():
+    elif column == "duration" and category_name in duration_code.keys():
         return duration_code[category_name]
-    if column == "old/new" and category_name in is_new_build.keys():
+    elif column == "old/new" and category_name in is_new_build.keys():
         return is_new_build[category_name]
-    raise NameError(f"Following category name: {category_name} doesn't exist.")
+    else:
+        return category_name
 
 
 def _truncate_numeric(value: Union[int, float, integer, floating]) -> str:
@@ -88,4 +111,7 @@ def _count_outliers(df: DataFrame, column: str) -> str:
     Q1, Q3 = df[column].quantile([0.25, 0.75])
     IQR = Q3 - Q1
     lower, upper = Q1 - 1.5 * IQR, Q3 + 1.5 * IQR
-    return _truncate_numeric(((df[column] < lower) | (df[column] > upper)).sum())
+    below_lower = df[column] < lower
+    above_upper = df[column] > upper
+    mask = below_lower | above_upper
+    return str(Decimal(int(mask.sum())).quantize(Decimal("1")))

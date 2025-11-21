@@ -11,7 +11,6 @@ from pydantic import BaseModel
 from london_housing_ai.predict import transform_to_training_features
 from london_housing_ai.utils.logger import get_logger
 import json
-from pathlib import Path
 
 load_dotenv()
 logger = get_logger()
@@ -37,7 +36,7 @@ app = FastAPI(title="London Housing Price Predictor")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["http://localhost:5173", "http://localhost:5174"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

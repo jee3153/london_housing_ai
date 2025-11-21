@@ -13,7 +13,7 @@ from london_housing_ai.config_schemas.TrainConfig import TrainConfig
 
 
 def load_dataset(
-    path: Path, schema: List[str] = [], columns_to_load: List[str] = []
+    path: Path, schema: List[str] = [], columns_to_load: List[str] | None = None
 ) -> DataFrame:
     is_noheader = path.suffixes == [".noheader", ".csv"]
     try:

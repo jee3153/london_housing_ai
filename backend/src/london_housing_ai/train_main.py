@@ -68,9 +68,7 @@ def main(args: Namespace) -> None:  # noqa: C901
     ensure_checksum_table(engine)
     checksum = file_sha256(csv_path)
     cleaning_config = load_cleaning_config(config_path)
-    raw_data = load_dataset(
-        csv_path, cleaning_config.col_headers, cleaning_config.loading_cols
-    )
+    raw_data = load_dataset(csv_path, cleaning_config.col_headers)
 
     # if dataset exists load dataset from db
     if dataset_already_persisted(engine, checksum):
@@ -84,7 +82,12 @@ def main(args: Namespace) -> None:  # noqa: C901
         )
 
         # if dataset not exist, proceed cleaning and data extraction
-        df = clean_dataset(raw_data.copy(), cleaning_config)
+        df = clean_dataset(
+            load_dataset(
+                csv_path, cleaning_config.col_headers, cleaning_config.loading_cols
+            ),
+            cleaning_config,
+        )
 
         # ------comment it only when gcs uploading is required.
         # silver layer check-point
@@ -170,7 +173,7 @@ def main(args: Namespace) -> None:  # noqa: C901
             raise RuntimeError(msg)
 
         generate_data_quality_report(
-            raw_data.copy(), unique_filename_from_sha256("data_quality", checksum)
+            raw_data, unique_filename_from_sha256("data_quality", checksum)
         )
 
         experiment_logger = ExperimentLogger(
