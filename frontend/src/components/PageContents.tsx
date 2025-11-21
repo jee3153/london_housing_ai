@@ -46,7 +46,7 @@ function PageContents() {
       </TabsContent>
 
       <TabsContent value={DATA_QUALITY}>
-        <DataQuality runs={runs} />
+        <DataQuality />
       </TabsContent>
 
       <TabsContent value={UPLOAD_DATA}> … upload data section … </TabsContent>

@@ -51,17 +51,13 @@ export interface MlflowRunInfo {
 
 export type MlflowRunListResponse = MlflowRunResponse[];
 
-export interface DataQualityMissingColumns {
-  postcode: number;
-  price: number;
-  data: number;
-  property_type: number;
-  "old/new": number;
-  duration: number;
-  country: number;
+export interface DataQualityMissingData {
+  column: string;
+  count: string;
+  percentage: string;
 }
 
-export interface DataQualitySchemaSummary {
+interface DataQualitySchemaSummaryColumns {
   price: string;
   date: string;
   postcode: string;
@@ -70,8 +66,17 @@ export interface DataQualitySchemaSummary {
   duration: string;
   country: string;
 }
+interface DataQualitySchemaSummaryDataCounts {
+  columns: string;
+  rows: string;
+}
 
-export interface DataQualityNumericStat {
+interface DataQualitySchemaSummary {
+  counts: DataQualitySchemaSummaryDataCounts;
+  columns: DataQualitySchemaSummaryColumns;
+}
+
+interface DataQualityNumericStat {
   column: string;
   count: string;
   mean: string;
@@ -117,7 +122,7 @@ interface DataQualityCategoryDistribution {
 
 export interface MlflowDataQualityPayload {
   filename: string;
-  missing: DataQualityMissingColumns;
+  missing: DataQualityMissingData[];
   schema_summary: DataQualitySchemaSummary;
   numeric_stats: DataQualityNumericStat[];
   outliers: DataQualityOutliers;
