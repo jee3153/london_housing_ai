@@ -4,7 +4,7 @@ services:
       - postgres
       - mlflow
     working_dir: /app
-    command: python -m london_housing_ai.train_main --config src/london_housing_ai/configs/config_dataset2.yaml --csv src/london_housing_ai/data/May-2025-data.csv
+    command: python -m london_housing_ai.train_main --config src/london_housing_ai/configs/config_dataset2.yaml --csv src/london_housing_ai/data/Property_Prices_2022.csv
     build: .
     volumes:
       - ./src:/app/src

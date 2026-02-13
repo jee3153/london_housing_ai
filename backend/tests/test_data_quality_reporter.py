@@ -14,7 +14,7 @@ def sample_dataframe():
             "price": [100_000, 150_000, 175_000, 125_000, 210_000],
             "sqft": [350, 450, 550, 500, 600],
             "bedrooms": [1, 2, 3, 2, 3],
-            "property_type": ["flat", "flat", "house", "flat", "house"],
+            "property_type": ["F", "F", "D", "F", "S"],
         }
     )
 

@@ -10,6 +10,7 @@ from pydantic import BaseModel
 
 from london_housing_ai.predict import transform_to_training_features
 from london_housing_ai.utils.logger import get_logger
+import json
 
 load_dotenv()
 logger = get_logger()
@@ -35,7 +36,7 @@ app = FastAPI(title="London Housing Price Predictor")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["http://localhost:5173", "http://localhost:5174"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -80,15 +81,44 @@ def predict(data: HousingData):
     return {"predicted_price": round(float(np.expm1(preds[0])), 2)}
 
 
-@app.get("/experiment_runs")
+@app.get("/experiments")
 def get_runs():
     return runs
 
 
-@app.get("/artifacts")
-def get_artifacts():
+@app.get("/artifacts/data_quality")
+def get_data_quality_artifacts():
     if not runs:
-        return {"messege": "No artifacts available", "artifacts": []}
-
+        return {"messege": "No artifacts available"}
     last_run_id = runs[-1].info.run_id
-    return {"artifacts": client.list_artifacts(last_run_id)}
+    data_quality_file = [
+        artifact_name.path
+        for artifact_name in client.list_artifacts(last_run_id)
+        if str(artifact_name.path).startswith("data_quality")
+        and not artifact_name.is_dir
+    ]
+    if not data_quality_file:
+        return {"message": "No data quality file available for this experiment run"}
+    data_quality_file_name = data_quality_file[0]
+    local_data_quality_file = client.download_artifacts(
+        path=data_quality_file_name, run_id=last_run_id
+    )
+    logger.info(
+        f"data quality file name = {data_quality_file_name}, local_data_quality_file = {local_data_quality_file}"
+    )
+    if not local_data_quality_file:
+        return {
+            "message": "No data quality file available to download for this experiment run"
+        }
+
+    response = {"filename": data_quality_file_name}
+    try:
+        with open(local_data_quality_file, "r") as f:
+            response = {**response, **json.load(f)}
+    except FileNotFoundError as err:
+        raise FileNotFoundError(
+            f"File at {local_data_quality_file} was not found. Error message: {err}"
+        )
+    except Exception as err:
+        raise Exception(f"Fetching data quality metadata failed due to {err}")
+    return response
