@@ -5,6 +5,7 @@ from typing import Any, List, Optional
 
 from pydantic import BaseModel, Field, field_validator
 
+
 class PredictResponse(BaseModel):
     predicted_price: float
     run_id: str
@@ -42,10 +43,10 @@ class HealthResponse(BaseModel):
 
 
 class PredictionRequest(BaseModel):
-    postcode: str # -> resolved to district via postcodes.io
-    property_type: str # D/S/T/F
-    is_new_build: str = "N" # Y/N
-    is_leasehold: str = "N" # Y/N (derived from duration field)
+    postcode: str  # -> resolved to district via postcodes.io
+    property_type: str  # D/S/T/F
+    is_new_build: str = "N"  # Y/N
+    is_leasehold: str = "N"  # Y/N (derived from duration field)
 
     @field_validator("property_type")
     @classmethod
@@ -60,4 +61,4 @@ class PredictionRequest(BaseModel):
     def validate_yn(cls, v):
         if v.upper() not in {"Y", "N"}:
             raise ValueError("Must be Y or N")
-        return v.upper()    
+        return v.upper()

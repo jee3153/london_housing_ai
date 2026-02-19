@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 from fastapi import APIRouter, HTTPException
 
-from london_housing_ai.api.schemas import PredictResponse, PredictionRequest
+from london_housing_ai.api.schemas import PredictionRequest, PredictResponse
 from london_housing_ai.api.services import mlflow_service
 from london_housing_ai.api.services.model_cache import get_or_load_model
 from london_housing_ai.api.services.transformer_cache import get_or_load_transformer
@@ -19,7 +19,9 @@ async def predict(data: PredictionRequest) -> PredictResponse:
     # Resolve postcode -> district
     district = await resolve_district(data.postcode)
     if district is None:
-        raise HTTPException(status_code=400, detail=f"Postcode '{data.postcode}' not found")
+        raise HTTPException(
+            status_code=400, detail=f"Postcode '{data.postcode}' not found"
+        )
 
     user_input = data.model_dump()
     user_input["district"] = district

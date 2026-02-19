@@ -1,14 +1,14 @@
 import os
+from typing import Optional
 
 import mlflow
 import pandas as pd
+from mlflow.entities import RunStatus
+from mlflow.tracking import MlflowClient
 from sqlalchemy import text
 
 from london_housing_ai.persistence import get_engine
 from london_housing_ai.utils.create_files import generate_artifact_from_payload
-from mlflow.tracking import MlflowClient
-from mlflow.entities import RunStatus
-from typing import Optional
 
 engine = get_engine()
 with engine.begin() as conn:

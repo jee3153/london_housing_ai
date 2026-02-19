@@ -19,4 +19,3 @@ def get_or_load_model(run_id: str):
         _cached_run_id = run_id
         _cached_model = model
         return model
-

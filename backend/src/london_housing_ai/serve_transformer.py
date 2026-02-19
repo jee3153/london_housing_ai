@@ -4,9 +4,10 @@ import json
 import numpy as np
 import pandas as pd
 
+
 class ServingTransformer:
     """Transforms user input into model-ready features.
-    
+
     Mirrors the training pipeline but uses precomputed lookup tables
     instead of computing trends from the full dataset
     """
@@ -22,17 +23,26 @@ class ServingTransformer:
         today = datetime.date.today()
 
         district = user_input["district"]
-        property_type = user_input["property_type"] # D/S/T/F
-        is_new_build = user_input.get("is_new_build", "N") # Y/N
-        is_leasehold = user_input.get("is_leasehold", "N") # Y/N
+        property_type = user_input["property_type"]  # D/S/T/F
+        is_new_build = user_input.get("is_new_build", "N")  # Y/N
+        is_leasehold = user_input.get("is_leasehold", "N")  # Y/N
         sold_year = today.year
         sold_month = today.month
 
         # Trend lookups = use district median as fallback if district unseen
         global_price_median = np.median(list(self._borough_price_trend.values()))
-        borough_price_trend = self._borough_price_trend.get(district, global_price_median)
-        district_yearly_median = self._district_yearly_medians.get(f"{district}_{sold_year}", self._district_yearly_medians.get(f"{district}_{sold_year - 1}", global_price_median))
-        avg_price_last_half = self._avg_price_last_half.get(district, global_price_median)
+        borough_price_trend = self._borough_price_trend.get(
+            district, global_price_median
+        )
+        district_yearly_median = self._district_yearly_medians.get(
+            f"{district}_{sold_year}",
+            self._district_yearly_medians.get(
+                f"{district}_{sold_year - 1}", global_price_median
+            ),
+        )
+        avg_price_last_half = self._avg_price_last_half.get(
+            district, global_price_median
+        )
 
         # Interaction features - deterministic, same logic as training
         advanced_property_type = f"{is_new_build}_{property_type}"

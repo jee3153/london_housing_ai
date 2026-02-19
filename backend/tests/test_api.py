@@ -29,9 +29,15 @@ def test_cors_allows_configured_origin(client: TestClient) -> None:
     assert resp.headers.get("access-control-allow-origin") == "http://example.com"
 
 
-def test_health_degraded_when_no_runs(monkeypatch: pytest.MonkeyPatch, client: TestClient) -> None:
-    monkeypatch.setattr(mlflow_service, "get_experiment_name", lambda: "LondonHousingAI")
-    monkeypatch.setattr(mlflow_service, "get_tracking_uri", lambda: "http://mlflow:5000")
+def test_health_degraded_when_no_runs(
+    monkeypatch: pytest.MonkeyPatch, client: TestClient
+) -> None:
+    monkeypatch.setattr(
+        mlflow_service, "get_experiment_name", lambda: "LondonHousingAI"
+    )
+    monkeypatch.setattr(
+        mlflow_service, "get_tracking_uri", lambda: "http://mlflow:5000"
+    )
     monkeypatch.setattr(mlflow_service, "get_latest_finished_run_id", lambda: None)
 
     resp = client.get("/health")
@@ -44,8 +50,12 @@ def test_health_degraded_when_no_runs(monkeypatch: pytest.MonkeyPatch, client: T
 def test_health_ok_when_latest_run_exists(
     monkeypatch: pytest.MonkeyPatch, client: TestClient
 ) -> None:
-    monkeypatch.setattr(mlflow_service, "get_experiment_name", lambda: "LondonHousingAI")
-    monkeypatch.setattr(mlflow_service, "get_tracking_uri", lambda: "http://mlflow:5000")
+    monkeypatch.setattr(
+        mlflow_service, "get_experiment_name", lambda: "LondonHousingAI"
+    )
+    monkeypatch.setattr(
+        mlflow_service, "get_tracking_uri", lambda: "http://mlflow:5000"
+    )
     monkeypatch.setattr(mlflow_service, "get_latest_finished_run_id", lambda: "run123")
 
     resp = client.get("/health")
@@ -70,9 +80,15 @@ def test_predict_success(monkeypatch: pytest.MonkeyPatch, client: TestClient) ->
         return "Camden"
 
     monkeypatch.setattr(mlflow_service, "get_latest_finished_run_id", lambda: "run123")
-    monkeypatch.setattr(mlflow_service, "run_uses_log_target", lambda run_id, default=True: True)
-    monkeypatch.setattr(predict_router, "get_or_load_model", lambda run_id: DummyModel())
-    monkeypatch.setattr(predict_router, "get_or_load_transformer", lambda: DummyTransformer())
+    monkeypatch.setattr(
+        mlflow_service, "run_uses_log_target", lambda run_id, default=True: True
+    )
+    monkeypatch.setattr(
+        predict_router, "get_or_load_model", lambda run_id: DummyModel()
+    )
+    monkeypatch.setattr(
+        predict_router, "get_or_load_transformer", lambda: DummyTransformer()
+    )
     monkeypatch.setattr(predict_router, "resolve_district", fake_resolve_district)
 
     resp = client.post(
@@ -90,7 +106,9 @@ def test_predict_success(monkeypatch: pytest.MonkeyPatch, client: TestClient) ->
     assert payload["predicted_price"] == 1000.0
 
 
-def test_mlflow_runs_endpoint(monkeypatch: pytest.MonkeyPatch, client: TestClient) -> None:
+def test_mlflow_runs_endpoint(
+    monkeypatch: pytest.MonkeyPatch, client: TestClient
+) -> None:
     tz = dt.timezone.utc
     runs = [
         RunSummary(
@@ -100,8 +118,12 @@ def test_mlflow_runs_endpoint(monkeypatch: pytest.MonkeyPatch, client: TestClien
             end_time=dt.datetime(2025, 1, 1, 0, 5, tzinfo=tz),
         )
     ]
-    monkeypatch.setattr(mlflow_service, "get_experiment_name", lambda: "LondonHousingAI")
-    monkeypatch.setattr(mlflow_service, "list_run_summaries", lambda limit=30: runs[:limit])
+    monkeypatch.setattr(
+        mlflow_service, "get_experiment_name", lambda: "LondonHousingAI"
+    )
+    monkeypatch.setattr(
+        mlflow_service, "list_run_summaries", lambda limit=30: runs[:limit]
+    )
 
     resp = client.get("/mlflow/runs?limit=1")
     assert resp.status_code == 200
@@ -110,7 +132,9 @@ def test_mlflow_runs_endpoint(monkeypatch: pytest.MonkeyPatch, client: TestClien
     assert payload["runs"][0]["run_id"] == "run1"
 
 
-def test_mlflow_artifacts_endpoint(monkeypatch: pytest.MonkeyPatch, client: TestClient) -> None:
+def test_mlflow_artifacts_endpoint(
+    monkeypatch: pytest.MonkeyPatch, client: TestClient
+) -> None:
     artifacts = [ArtifactSummary(path="catboost_model", is_dir=True, file_size=None)]
     monkeypatch.setattr(mlflow_service, "get_latest_finished_run_id", lambda: "run123")
     monkeypatch.setattr(mlflow_service, "list_artifacts", lambda run_id: artifacts)

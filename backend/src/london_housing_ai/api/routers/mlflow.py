@@ -24,4 +24,3 @@ def artifacts(run_id: str | None = None) -> ArtifactsResponse:
     return ArtifactsResponse(
         run_id=resolved_run_id, artifacts=mlflow_service.list_artifacts(resolved_run_id)
     )
-
