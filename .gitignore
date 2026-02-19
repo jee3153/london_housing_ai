@@ -15,3 +15,4 @@ outputs/
 terraform/.terraform.tfstate.lock.info
 data/
 artifacts/
+output/pdf
