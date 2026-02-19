@@ -16,54 +16,9 @@ FastAPI backend for housing price prediction.
 - [x] Docker/Cloud deployment
 - [ ] Dashboard for data validation and model interpretability
 
-## Setup: docker compose
-
-1. compose up all components.
-Change the args of train service in `./compose.yaml` to reflect your own dataset and configuration yaml file.
-
-```bash
-cd backend
-docker compose down -v
-docker compose build
-docker compose up train mlflow postgres
-```
-
-1. Run train
-to run train it requires cloud storage to store model artifacts and parquets
-if google cloud storage buckets are not found, run:
-
-```bash
-gcloud storage buckets create gs://london-housing-ai-artifacts
-gcloud storage buckets create gs://london-housing-ai-data-lake
-```
-
-1. Run training on a new terminal tab, log model to MLflow/artifacts
-
-```bash
-docker compose run --rm --no-deps \
-  -e MLFLOW_TRACKING_URI=http://mlflow:5000 \
-  -e GOOGLE_APPLICATION_CREDENTIALS= \
-  train
-```
-
-1. Run this script to generate lookup tables:
-
-```bash
-docker compose run --rm --no-deps \
-  -e MLFLOW_TRACKING_URI=http://mlflow:5000 \
-  -e GOOGLE_APPLICATION_CREDENTIALS= \
-  train python -m london_housing_ai.scripts.export_lookup_tables
-```
-
-1. Compose up api service
-
-```bash
-docker compose up api
-```
-
 ## API Endpoints
 
-###  Health Check
+### Health Check
 
 ```bash
 curl http://localhost:7777/health
@@ -162,6 +117,26 @@ cd backend
 docker compose down -v
 docker compose build
 docker compose up train mlflow postgres
+```
+
+**Training**
+
+```bash
+# If you want to run with GCP and it doesn't have buckets, run this:
+gcloud storage buckets create gs://london-housing-ai-artifacts
+gcloud storage buckets create gs://london-housing-ai-data-lake
+
+# Train
+docker compose run --rm --no-deps \
+  -e MLFLOW_TRACKING_URI=http://mlflow:5000 \
+  -e GOOGLE_APPLICATION_CREDENTIALS= \
+  train
+
+# Generate trand lookup table
+docker compose run --rm --no-deps \
+  -e MLFLOW_TRACKING_URI=http://mlflow:5000 \
+  -e GOOGLE_APPLICATION_CREDENTIALS= \
+  train python -m london_housing_ai.scripts.export_lookup_tables  
 ```
 
 ### Run Tests
