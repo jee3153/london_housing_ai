@@ -7,7 +7,7 @@ name = "london_housing_ai"
 version = "0.1.0"
 
 [tool.poetry.dependencies]
-python = "^3.12.11"
+python = ">=3.12.11,<3.14"
 aiohappyeyeballs = "2.6.1"
 aiohttp = "3.12.13"
 aiohttp-cors = "0.8.1"

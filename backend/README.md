@@ -24,6 +24,7 @@ This project addresses that pain by automating the data ingestion, cleaning, and
 1. compose up all components.
 Change the args of train service in `./compose.yaml` to reflect your own dataset and configuration yaml file.
 ```bash
+cd backend
 docker compose down -v
 docker compose build
 docker compose up train mlflow postgres
@@ -36,9 +37,20 @@ if google cloud storage buckets are not found, run:
 gcloud storage buckets create gs://london-housing-ai-artifacts
 gcloud storage buckets create gs://london-housing-ai-data-lake
 ```
-runs training, log model to MLflow/artifacts
+runs training on a new terminal tab, log model to MLflow/artifacts
 ```bash
-docker compose run train
+docker compose run --rm --no-deps \
+  -e MLFLOW_TRACKING_URI=http://mlflow:5000 \
+  -e GOOGLE_APPLICATION_CREDENTIALS= \
+  train
+```
+
+run this script to generate lookup tables:
+```bash
+docker compose run --rm --no-deps \
+  -e MLFLOW_TRACKING_URI=http://mlflow:5000 \
+  -e GOOGLE_APPLICATION_CREDENTIALS= \
+  train python -m london_housing_ai.scripts.export_lookup_tables
 ```
 
 3. up api service
