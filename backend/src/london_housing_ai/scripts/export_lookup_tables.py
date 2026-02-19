@@ -6,6 +6,9 @@ from sqlalchemy import text
 
 from london_housing_ai.persistence import get_engine
 from london_housing_ai.utils.create_files import generate_artifact_from_payload
+from mlflow.tracking import MlflowClient
+from mlflow.entities import RunStatus
+from typing import Optional
 
 engine = get_engine()
 with engine.begin() as conn:
@@ -48,26 +51,22 @@ lookup_table_path = generate_artifact_from_payload(LOOKUP_TABLE_NAME, artifacts)
 experiment_name = os.getenv("MLFLOW_EXPERIMENT_NAME", "LondonHousingAI")
 mlflow.set_experiment(experiment_name)
 
-with mlflow.start_run(run_id=get_latest_finished_run_id()):
+client = MlflowClient(tracking_uri=os.getenv("MLFLOW_TRACKING_URI"))
+experiment = client.get_experiment_by_name(experiment_name)
+if experiment is None:
+    raise RuntimeError("Experiment not found")
+
+finished_status = RunStatus.to_string(RunStatus.FINISHED)
+runs = client.search_runs(
+    experiment_ids=[experiment.experiment_id],
+    filter_string=f"attributes.status = '{finished_status}'",
+    order_by=["start_time DESC"],
+    max_results=1,
+)
+run_id = runs[0].info.run_id if runs else None
+
+with mlflow.start_run(run_id=run_id):
     mlflow.log_artifact(str(lookup_table_path))
 
 print(f"Exported {len(borough_trend)} districts")
 print(f"Exported {len(district_yearly_dict)} district-year pairs")
-
-
-def get_latest_finished_run_id() -> Optional[str]:
-    client = MlflowClient(tracking_uri=os.getenv("MLFLOW_TRACKING_URI"))
-    experiment = client.get_experiment_by_name(experiment_name)
-    if experiment is None:
-        return None
-
-    finished_status = RunStatus.to_string(RunStatus.FINISHED)
-    runs = client.search_runs(
-        experiment_ids=[experiment.experiment_id],
-        filter_string=f"attributes.status = '{finished_status}'",
-        order_by=["start_time DESC"],
-        max_results=limit,
-    )
-    if not runs:
-        return None
-    return runs[0].info.run_id
