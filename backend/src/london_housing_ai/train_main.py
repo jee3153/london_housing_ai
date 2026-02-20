@@ -164,7 +164,7 @@ def main(args: Namespace) -> None:  # noqa: C901
             mlflow_catboost.log_model(
                 cb_model=trainer.model,
                 name=os.getenv("MLFLOW_ARTIFACT_PATH", "catboost_model"),
-                input_example=training_df.iloc[:1],
+                input_example=training_df.drop(columns=[train_cfg.label]).iloc[:1],
             )
         except Exception as exc:
             msg = f"Failed to log Catboost model to MLflow. caused by: {exc}"

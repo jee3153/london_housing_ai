@@ -32,7 +32,7 @@ async def predict(data: PredictionRequest) -> PredictResponse:
 
     model = get_or_load_model(run_id)
 
-    transformer = get_or_load_transformer()
+    transformer = get_or_load_transformer(run_id)
     features = transformer.transform(user_input)
     logger.info(features.to_dict(orient="records"))
     logger.info(features.dtypes)

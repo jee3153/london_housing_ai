@@ -3,11 +3,13 @@
 A hands-on, end-to-end machine learning platform for tabular data, featuring automated data cleaning, feature engineering, experiment tracking, and model training on real-world London housing data.
 
 ## Motivation
+
 While building a London Housing Price ML model, I noticed a lot of repetitive cycles of data cleaning, and frequent changes in data cleaning logic. Because ML model development always involves experimentation and trial-and-error, doing all of this cleaning manually is both time-consuming and inefficient.
 
 This project addresses that pain by automating the data ingestion, cleaning, and feature engineering steps as part of a reproducible, maintainable workflow. My goal is to build out the infrastructure that supports ML experimentation and model serving—making the end-to-end process faster and easier to manage.
 
 ## Features
+
 - [x] Automated data loading and cleaning from CSV
 - [x] Persist cleaned data to database (Postgres)
 - [x] Feature engineering (postcode, house types, etc.)
@@ -21,8 +23,10 @@ This project addresses that pain by automating the data ingestion, cleaning, and
 - [ ] Dashboard for data validation and model interpretability
 
 ## Setup: docker compose
+
 1. compose up all components.
 Change the args of train service in `./compose.yaml` to reflect your own dataset and configuration yaml file.
+
 ```bash
 cd backend
 docker compose down -v
@@ -30,14 +34,17 @@ docker compose build
 docker compose up train mlflow postgres
 ```
 
-2. run train
+1. Run train
 to run train it requires cloud storage to store model artifacts and parquets
 if google cloud storage buckets are not found, run:
+
 ```bash
 gcloud storage buckets create gs://london-housing-ai-artifacts
 gcloud storage buckets create gs://london-housing-ai-data-lake
 ```
-runs training on a new terminal tab, log model to MLflow/artifacts
+
+1. Run training on a new terminal tab, log model to MLflow/artifacts
+
 ```bash
 docker compose run --rm --no-deps \
   -e MLFLOW_TRACKING_URI=http://mlflow:5000 \
@@ -45,7 +52,8 @@ docker compose run --rm --no-deps \
   train
 ```
 
-run this script to generate lookup tables:
+1. Run this script to generate lookup tables:
+
 ```bash
 docker compose run --rm --no-deps \
   -e MLFLOW_TRACKING_URI=http://mlflow:5000 \
@@ -53,60 +61,72 @@ docker compose run --rm --no-deps \
   train python -m london_housing_ai.scripts.export_lookup_tables
 ```
 
-3. up api service
+1. Compose up api service
+
 ```bash
 docker compose up api
 ```
 
-## Setup: Local machine
-**Note:** It is recommended to use `docker-compose` for a simpler setup. See the `Setup: docker compose` section below. Use this when you need debugger.
+## Manual API test
 
-1. Setup postgres
+**Health Check**
+
 ```bash
-docker run -p 5432:5432 --name some-postgres -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=password -e POSTGRES_DB=postgres -d postgres:16
+curl http://localhost:7777/health
 ```
 
-2. Setup mlflow server
+**Prediction**
+
 ```bash
-mlflow server \
-  --backend-store-uri postgresql://postgres:password@localhost:5432/postgres \
-  --default-artifact-root ./mlruns \
-  --host 0.0.0.0
+curl -X POST http://localhost:7777/predict \
+  -H "Content-Type: application/json" \
+  -d '{"postcode":"SW1A 1AA","property_type":"F"}'
 ```
 
 ## Running test
+
 ⚠️ Ensure to locate in root path before running:
+
 ```bash
 poetry run pytest -v -m "not gcs"
 ```
 
 ## Feature Extraction Workflow
+
 When you add a new column extracted from features follow this workflow.
+
 1. define extraction method which adds new column to data frame
 2. add the new column to `cleaning.required_cols` and `train.cat_features` or `train.numeric_features` list to `ai_platform/src/configs/config_dataset2.yaml`
 
 ## Troubleshoot tips
+
 If you are having failure for second compose up,
 try deleting `/mlruns` directory, and run train again.
 
 ## Local terraform deployment
+
 ##### Before everything
+
 remove any existing buckets
+
 ```bash
 gsutil rm -r gs://london-housing-ai-artifacts
 gsutil rm -r gs://london-housing-ai-data-lake
 ```
 
 If buckets already exist:
+
 ```bash
 terraform import google_storage_bucket.data_lake_bucket london-housing-ai-data-lake
 terraform import google_storage_bucket.model_artifacts_bucket london-housing-ai-artifacts
 ```
 
 Check whether:
+
 - `terraform-network` already exists or not
 - `london-housing-db-instance` already exists or not
 - `terraform-instance` already exists or not
+
 ```bash
 gcloud compute networks list
 gcloud sql instances list
@@ -115,6 +135,7 @@ gcloud compute instances list
 ```
 
 If exists:
+
 ```bash
 terraform import google_compute_network.vpc_network projects/abiding-sunset-333516/global/networks/terraform-network
 terraform import module.database.google_sql_database_instance.postgres projects/abiding-sunset-333516/instances/london-housing-db-instance
@@ -122,22 +143,26 @@ terraform import google_compute_instance.vm_instance projects/abiding-sunset-333
 ```
 
 Verify import success:
+
 ```bash
 terraform state list
 ```
 
 Deploy
+
 ```bash
 terraform init
 terraform apply -var-file="terraform.tfvars" -auto-approve
 ```
 
 Expose mlflow tracking uri
+
 ```bash
 export MLFLOW_TRACKING_URI=$(terraform output -raw mlflow_tracking_uri)
 ```
 
 Manual clean up
+
 ```bash
 gcloud iam service-accounts delete mlflow-sa@abiding-sunset-333516.iam.gserviceaccount.com --quiet
 gcloud compute instances delete mlflow-instance --zone=us-central1-a --quiet
@@ -149,25 +174,29 @@ gcloud compute networks delete london-housing-vpc
 ```
 
 ## Progress
+
 🧩 Recap: What you already have
 
-| Component	| Purpose |	Status |
+| Component | Purpose | Status |
 |-----------|---------|--------|
-| Postgres DB |	Used by MLflow as backend store (experiments, runs metadata)|	✅ Deployed |
-| VPN + VPC | network	Networking & security isolation for your resources	| ✅ Deployed |
-| VM instance	| Compute node to host MLflow, training jobs, or Airflow | ✅ Deployed |
-| GCS buckets | One for parquet data (“silver” layer) and one for model artifacts	| ✅ Deployed |
+| Postgres DB | Used by MLflow as backend store (experiments, runs metadata)| ✅ Deployed |
+| VPN + VPC | network Networking & security isolation for your resources | ✅ Deployed |
+| VM instance | Compute node to host MLflow, training jobs, or Airflow | ✅ Deployed |
+| GCS buckets | One for parquet data (“silver” layer) and one for model artifacts | ✅ Deployed |
 
 ### Distinction GCS bucket vs MLflow server
+
 GCS buckets: hold raw and binary data
 MLflow server: hold structured experiment tracking metadata e.g. run Ids, start/end time, model version num, parameters used, metrics, artifact URIs that point to GCS
 
 -> MLflow server ties things together into a searchable experiment history with APIs and UI
 
 ## What is MLFlow?
+
 it's a **tracking** and **model registry system**.
 
 🟢 What MLflow does
+
 | Layer | Description | Who uses it |
 |-------|-------------|-------------|
 | Tracking UI (frontend) | A simple web interface (usually on port `5000`) where you can browse experiment runs, metrics, and parameters. | Data scientists, ML engineers |
@@ -184,11 +213,12 @@ it's a **tracking** and **model registry system**.
 
 | ❌ | It doesn’t deploy models to production (unless you integrate MLflow Models with tools like Seldon, BentoML, or Vertex AI). |
 
-In bigger company where there are some user bases, they would have data pipeline. 
-But since I don't have any production user input, nor production system, data will be pulled manually from Kaggle or Google dataset search, or govenment datasets. 
+In bigger company where there are some user bases, they would have data pipeline.
+But since I don't have any production user input, nor production system, data will be pulled manually from Kaggle or Google dataset search, or govenment datasets.
 Hence, no datapipeline for this project.
 
 ## Big picture map of data flow
+
 ```pgsql
 Users / Production Systems
           │
@@ -224,12 +254,14 @@ Users / Production Systems
 A data pipeline is everything that ensures raw data gets ingested, cleaned, and made available for downstream use — not necessarily for ML only (could also be dashboards, BI, etc.).
 
 **Scope:**
+
 - From data source (e.g., app logs, API, sensors, CRM)
 - To data warehouse or data lake (e.g., Snowflake, BigQuery, S3, GCS)
 - Includes all ETL/ELT steps (Extract, Transform, Load)
 - Includes data validation, quality checks, and partitioning/versioning
 
 **Example technologies:**
+
 - Ingestion: Kafka, Airbyte, Fivetran, Pub/Sub
 - Transformation: dbt, Spark, Dataflow, Beam
 - Storage: BigQuery, Snowflake, Delta Lake, GCS
@@ -244,6 +276,7 @@ An ML pipeline starts after the data pipeline ends.
 It consumes the cleaned, transformed data from the warehouse or “feature store,” and focuses on model creation, evaluation, and deployment.
 
 **Scope:**
+
 - Reads data from data warehouse or data lake
 - Splits into training/validation/test sets
 - Performs feature engineering (scaling, encoding, etc.)
@@ -252,6 +285,7 @@ It consumes the cleaned, transformed data from the warehouse or “feature store
 - Pushes final model to registry or serving endpoint
 
 **Example technologies:**
+
 - feature engineering: Pandas, Spark ML, Feast (Feature Store)
 - Training: scikit-learn, XGBoost, TensorFlow, PyTorch
 - Tracking: MLflow
@@ -262,6 +296,7 @@ It consumes the cleaned, transformed data from the warehouse or “feature store
 Versioned model artifacts and model registry entries.
 
 #### Production ML Architecture Overview
+
 ```pgsql
          ┌──────────────────────────────┐
          │     User & External Data     │

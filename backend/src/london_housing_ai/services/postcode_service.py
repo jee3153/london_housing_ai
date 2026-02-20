@@ -12,11 +12,19 @@ from london_housing_ai.utils.logger import get_logger
 POSTCODE_LOOKUP_URL = "https://api.postcodes.io/postcodes/{postcode}"
 _cache: dict[str, Optional[str]] = {}
 _lock = asyncio.Lock()
+_session: Optional[aiohttp.ClientSession] = None
 logger = get_logger()
 
 
 def _normalize_postcode(postcode: str) -> str:
     return postcode.replace(" ", "").upper()
+
+
+def get_session() -> aiohttp.ClientSession:
+    global _session
+    if _session is None or _session.closed:
+        _session = aiohttp.ClientSession(headers={"User-Agent": "LondonHousing/0.1"})
+    return _session
 
 
 async def resolve_district(postcode: str, timeout_seconds: int = 10) -> Optional[str]:
@@ -28,15 +36,16 @@ async def resolve_district(postcode: str, timeout_seconds: int = 10) -> Optional
         return None
 
     normalized = _normalize_postcode(postcode)
-    if normalized in _cache:
-        return _cache[normalized]
+    async with _lock:
+        if normalized in _cache:
+            return _cache[normalized]
 
     url = POSTCODE_LOOKUP_URL.format(postcode=quote(normalized))
     district: Optional[str] = None
+
+    # Make HTTP call
     try:
-        async with aiohttp.ClientSession(
-            headers={"User-Agent": "LondonHousing/0.1"}
-        ) as session:
+        async with get_session() as session:
             async with async_timeout.timeout(timeout_seconds):
                 async with session.get(url) as response:
                     if response.status == 404:

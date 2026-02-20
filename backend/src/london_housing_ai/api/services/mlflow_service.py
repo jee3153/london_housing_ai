@@ -6,6 +6,7 @@ from functools import lru_cache
 from typing import List, Optional
 
 import mlflow
+import mlflow.catboost as mlflow_catboost
 from mlflow.entities import Experiment, Run, RunStatus
 from mlflow.tracking import MlflowClient
 
@@ -141,7 +142,14 @@ def list_runs_payload(limit: int = 30):
 def load_model_for_run(run_id: str):
     artifact_path = get_artifact_path()
     model_uri = f"runs:/{run_id}/{artifact_path}"
-    return mlflow.pyfunc.load_model(model_uri)
+    return mlflow_catboost.load_model(model_uri)
+
+
+def download_artifact_for_run(
+    run_id: str, artifact_path: str, dst_path: Optional[str] = None
+) -> str:
+    client = get_client()
+    return client.download_artifacts(run_id, artifact_path, dst_path)
 
 
 def run_uses_log_target(run_id: str, default: bool = True) -> bool:

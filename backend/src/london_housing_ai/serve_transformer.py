@@ -58,7 +58,8 @@ class ServingTransformer:
             "advanced_property_type": advanced_property_type,
             "property_type_and_tenure": property_type_and_tenure,
             "property_type_and_district": property_type_and_district,
-            "date": float(datetime.date(sold_year, sold_month, 1).toordinal()),
+            # Training uses datetime-like values for date; keep serving type aligned.
+            "date": pd.Timestamp(datetime.date(sold_year, sold_month, 1)),
             "sold_year": sold_year,
             "borough_price_trend": borough_price_trend,
             "district_yearly_medians": district_yearly_median,

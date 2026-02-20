@@ -32,6 +32,8 @@ def test_cors_allows_configured_origin(client: TestClient) -> None:
 def test_health_degraded_when_no_runs(
     monkeypatch: pytest.MonkeyPatch, client: TestClient
 ) -> None:
+    import london_housing_ai.api.routers.health as health_router
+
     monkeypatch.setattr(
         mlflow_service, "get_experiment_name", lambda: "LondonHousingAI"
     )
@@ -39,17 +41,22 @@ def test_health_degraded_when_no_runs(
         mlflow_service, "get_tracking_uri", lambda: "http://mlflow:5000"
     )
     monkeypatch.setattr(mlflow_service, "get_latest_finished_run_id", lambda: None)
+    monkeypatch.setattr(health_router, "get_or_load_transformer", lambda: object())
 
     resp = client.get("/health")
     assert resp.status_code == 200
     payload = resp.json()
     assert payload["status"] == "degraded"
     assert payload["latest_run_id"] is None
+    assert payload["model_loaded"] is False
+    assert payload["transformer_loaded"] is False
 
 
 def test_health_ok_when_latest_run_exists(
     monkeypatch: pytest.MonkeyPatch, client: TestClient
 ) -> None:
+    import london_housing_ai.api.routers.health as health_router
+
     monkeypatch.setattr(
         mlflow_service, "get_experiment_name", lambda: "LondonHousingAI"
     )
@@ -57,12 +64,18 @@ def test_health_ok_when_latest_run_exists(
         mlflow_service, "get_tracking_uri", lambda: "http://mlflow:5000"
     )
     monkeypatch.setattr(mlflow_service, "get_latest_finished_run_id", lambda: "run123")
+    monkeypatch.setattr(health_router, "get_or_load_transformer", lambda run_id: object())
+    monkeypatch.setattr(
+        health_router, "get_or_load_model", lambda run_id: object()
+    )
 
     resp = client.get("/health")
     assert resp.status_code == 200
     payload = resp.json()
     assert payload["status"] == "ok"
     assert payload["latest_run_id"] == "run123"
+    assert payload["model_loaded"] is True
+    assert payload["transformer_loaded"] is True
 
 
 def test_predict_success(monkeypatch: pytest.MonkeyPatch, client: TestClient) -> None:
@@ -87,7 +100,7 @@ def test_predict_success(monkeypatch: pytest.MonkeyPatch, client: TestClient) ->
         predict_router, "get_or_load_model", lambda run_id: DummyModel()
     )
     monkeypatch.setattr(
-        predict_router, "get_or_load_transformer", lambda: DummyTransformer()
+        predict_router, "get_or_load_transformer", lambda run_id: DummyTransformer()
     )
     monkeypatch.setattr(predict_router, "resolve_district", fake_resolve_district)
 

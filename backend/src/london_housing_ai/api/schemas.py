@@ -39,6 +39,8 @@ class HealthResponse(BaseModel):
     experiment_name: str
     mlflow_tracking_uri: Optional[str] = None
     latest_run_id: Optional[str] = None
+    model_loaded: bool = False
+    transformer_loaded: bool = False
     detail: Optional[str] = None
 
 

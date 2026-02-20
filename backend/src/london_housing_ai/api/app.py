@@ -53,15 +53,11 @@ def create_app() -> FastAPI:
     @app.on_event("startup")
     def _warmup_prediction_dependencies() -> None:
         try:
-            warmup_transformer()
-        except Exception:
-            logger.exception("Failed to preload serving transformer")
-
-        try:
             run_id = mlflow_service.get_latest_finished_run_id()
             if run_id:
                 get_or_load_model(run_id)
+                warmup_transformer(run_id)
         except Exception:
-            logger.exception("Failed to preload latest model")
+            logger.exception("Failed to preload latest prediction dependencies")
 
     return app
