@@ -31,7 +31,9 @@ def _download_lookup_table(run_id: str) -> str:
             )
         except Exception as e:
             errors.append(f"{artifact_path}: {e}")
-    raise RuntimeError("Failed to download lookup table artifact. " + " | ".join(errors))
+    raise RuntimeError(
+        "Failed to download lookup table artifact. " + " | ".join(errors)
+    )
 
 
 def get_or_load_transformer(run_id: str) -> ServingTransformer:

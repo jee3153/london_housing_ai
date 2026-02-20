@@ -64,10 +64,10 @@ def test_health_ok_when_latest_run_exists(
         mlflow_service, "get_tracking_uri", lambda: "http://mlflow:5000"
     )
     monkeypatch.setattr(mlflow_service, "get_latest_finished_run_id", lambda: "run123")
-    monkeypatch.setattr(health_router, "get_or_load_transformer", lambda run_id: object())
     monkeypatch.setattr(
-        health_router, "get_or_load_model", lambda run_id: object()
+        health_router, "get_or_load_transformer", lambda run_id: object()
     )
+    monkeypatch.setattr(health_router, "get_or_load_model", lambda run_id: object())
 
     resp = client.get("/health")
     assert resp.status_code == 200
@@ -117,6 +117,11 @@ def test_predict_success(monkeypatch: pytest.MonkeyPatch, client: TestClient) ->
     payload = resp.json()
     assert payload["run_id"] == "run123"
     assert payload["predicted_price"] == 1000.0
+    assert payload["confidence_interval"] == [900.0, 1100.0]
+    assert payload["model_version"].endswith(":run123")
+    assert "user_provided" in payload["features_used"]
+    assert "enriched" in payload["features_used"]
+    assert "defaulted" in payload["features_used"]
 
 
 def test_mlflow_runs_endpoint(

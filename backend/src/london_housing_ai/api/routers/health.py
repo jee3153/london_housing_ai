@@ -45,7 +45,9 @@ def health() -> HealthResponse:
             detail = "No finished runs found"
 
         status = (
-            "ok" if (latest_run_id and model_loaded and transformer_loaded) else "degraded"
+            "ok"
+            if (latest_run_id and model_loaded and transformer_loaded)
+            else "degraded"
         )
         return HealthResponse(
             status=status,

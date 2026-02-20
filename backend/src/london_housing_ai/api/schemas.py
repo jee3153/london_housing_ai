@@ -8,7 +8,10 @@ from pydantic import BaseModel, Field, field_validator
 
 class PredictResponse(BaseModel):
     predicted_price: float
-    run_id: str
+    confidence_interval: list[float]
+    model_version: str
+    features_used: dict[str, list[str]]
+    run_id: Optional[str] = None
 
 
 class ArtifactSummary(BaseModel):
