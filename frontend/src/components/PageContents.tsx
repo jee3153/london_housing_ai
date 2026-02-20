@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 
-import { OVERVIEW, MODEL_COMPARISON, DATA_QUALITY, UPLOAD_DATA } from "../lib/constants";
+import { OVERVIEW, MODEL_COMPARISON, DATA_QUALITY, UPLOAD_DATA, PREDICT } from "../lib/constants";
 import type { MlflowRunListResponse, MlflowRunResponse } from "../types/mlflow";
 import ModelPerformance from "./model_performance/ModelPerformance";
 import { TabsContent } from "./ui/tabs";
+import PredictTab from './prediction/PredictTab'
 
 
 function PageContents() {
@@ -44,6 +45,7 @@ function PageContents() {
       </TabsContent>
       <TabsContent value={DATA_QUALITY}> … data quality section … </TabsContent>
       <TabsContent value={UPLOAD_DATA}> … upload data section … </TabsContent>
+      <TabsContent value={PREDICT}> <PredictTab /> </TabsContent>
     </div>
   );
 }
