@@ -18,7 +18,8 @@ This project addresses that pain by automating the data ingestion, cleaning, and
 
 Predict London housing prices based on:
 
-- Property features (bedrooms, bathrooms, square footage)
+- Property features (type, tenure, new build status)
+- Temporal features (sale year, month, 6-month market trends)
 - Location (postcode → borough → enriched features)
 - Property type (flat, terraced, semi-detached, detached)
 
@@ -163,9 +164,11 @@ london_housing_ai/
 ## 📈 Model Performance
 
 - **Algorithm:** CatBoost Regressor
-- **RMSE:** ~£30,000 (vs £80,000 with linear regression)
-- **Features:** 15+ (location, property_type, size, derived features)
-- **Training Data:** ~50,000 London property sales
+- **RMSE:** ~£342,000
+- **R²:** 0.44
+- **Note:** Dataset contains no bedroom/bathroom/sqft data — model uses
+  location, property type, and temporal market trends only.
+  Adding floor area data is the next planned improvement.
 
 ## 🔮 Future Improvements
 
@@ -195,15 +198,30 @@ Jenny Yang - [LinkedIn](https://www.linkedin.com/in/jenny-yang-76b405167/) - [Gi
 
 MIT
 =======
+
 # London Housing AI
+
 A full-stack ML pipeline for predicting property prices in London.
 
 ### 🏗️ Architecture
+
 - **Backend:** FastAPI (Python) serving ML predictions.
 - **Frontend:** React (TypeScript) for data visualization.
 - **Infra:** Terraform for GCS deployment & GitHub Actions for CI.
 
+## 📸 Screenshots
+
+### Price Prediction
+
+![Predict tab](docs/screenshots/predict.png)
+
+### Model Comparison Dashboard  
+
+![Model comparison view 1](docs/screenshots/model_comparison1.png)
+![Model comparison view 2](docs/screenshots/model_comparison2.png)
+
 ### 🧠 Key Features
+
 - End-to-end data processing pipeline (Pandas/Scikit-Learn).
 - Automated infrastructure as code.
 - Containerized environment for consistent local development.

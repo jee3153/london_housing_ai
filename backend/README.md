@@ -27,7 +27,179 @@ curl http://localhost:7777/health
 Response:
 
 ```json
-{"status":"ok","experiment_name":"LondonHousingAI","mlflow_tracking_uri":"http://mlflow:5000","latest_run_id":"0cbf545a66014505a698a5bf1ffd9ea0","model_loaded":true,"transformer_loaded":true,"detail":null}
+{
+  "status": "ok",
+  "experiment_name": "LondonHousingAI",
+  "mlflow_tracking_uri": "http://mlflow:5000",
+  "latest_run_id": "0cbf545a66014505a698a5bf1ffd9ea0",
+  "model_loaded": true,
+  "transformer_loaded": true,
+  "detail": null
+}
+```
+
+### Get Model Performance
+
+```bash
+curl http://localhost:7777/mlflow/runs
+```
+
+Response:
+
+```json
+[
+  {
+    "data": {
+      "metrics": {
+        "train_rmse": 307295.5976804504,
+        "train_mse": 94430584353.78523,
+        "train_r2": 0.549071639784239,
+        "validation_rmse": 341749.9735861974,
+        "validation_mse": 116793044446.16664,
+        "validation_r2": 0.4386297081718271,
+        "test_rmse": 338625.6701904285,
+        "test_mse": 114667344511.91685,
+        "test_r2": 0.449057980372933
+      },
+      "params": {
+        "loss_function": "MAE",
+        "iterations": "4000",
+        "depth": "8",
+        "learning_rate": "0.05",
+        "early_stopping_rounds": "200",
+        "random_seed": "42",
+        "model_class": "CatBoostRegressor",
+        "log_target": "True",
+        "raw_csv_sha256": "4440baedbd5aa47ca3dac76ef1aaa360c03b44e4a567a7d49047ef7f25e88f8d"
+      },
+      "tags": {
+        "mlflow.user": "root",
+        "mlflow.source.name": "/app/src/london_housing_ai/train_main.py",
+        "mlflow.source.type": "LOCAL",
+        "mlflow.runName": "london_housing_run"
+      }
+    },
+    "info": {
+      "artifact_uri": "file:///mlruns/6cb0c6846874447786ae03c306bbc05f/artifacts",
+      "end_time": 1771583813443,
+      "experiment_id": "1",
+      "lifecycle_stage": "active",
+      "run_id": "6cb0c6846874447786ae03c306bbc05f",
+      "run_uuid": "6cb0c6846874447786ae03c306bbc05f",
+      "start_time": 1771583735133,
+      "status": "FINISHED",
+      "user_id": "root"
+    }
+  },
+  {
+    "data": {
+      "metrics": {
+        "train_rmse": 307295.5976804504,
+        "train_mse": 94430584353.78523,
+        "train_r2": 0.549071639784239,
+        "validation_rmse": 341749.9735861974,
+        "validation_mse": 116793044446.16664,
+        "validation_r2": 0.4386297081718271,
+        "test_rmse": 338625.6701904285,
+        "test_mse": 114667344511.91685,
+        "test_r2": 0.449057980372933
+      },
+      "params": {
+        "loss_function": "MAE",
+        "iterations": "4000",
+        "depth": "8",
+        "learning_rate": "0.05",
+        "early_stopping_rounds": "200",
+        "random_seed": "42",
+        "model_class": "CatBoostRegressor",
+        "log_target": "True",
+        "raw_csv_sha256": "4440baedbd5aa47ca3dac76ef1aaa360c03b44e4a567a7d49047ef7f25e88f8d"
+      },
+      "tags": {
+        "mlflow.user": "root",
+        "mlflow.source.name": "/app/src/london_housing_ai/train_main.py",
+        "mlflow.source.type": "LOCAL",
+        "mlflow.runName": "london_housing_run"
+      }
+    },
+    "info": {
+      "artifact_uri": "file:///mlruns/0cbf545a66014505a698a5bf1ffd9ea0/artifacts",
+      "end_time": 1771580984264,
+      "experiment_id": "1",
+      "lifecycle_stage": "active",
+      "run_id": "0cbf545a66014505a698a5bf1ffd9ea0",
+      "run_uuid": "0cbf545a66014505a698a5bf1ffd9ea0",
+      "start_time": 1771580792444,
+      "status": "FINISHED",
+      "user_id": "root"
+    }
+  },
+  {
+    "data": {
+      "metrics": {},
+      "params": {},
+      "tags": {
+        "mlflow.user": "root",
+        "mlflow.source.name": "/app/src/london_housing_ai/scripts/export_lookup_tables.py",
+        "mlflow.source.type": "LOCAL",
+        "mlflow.runName": "export_lookup_tables"
+      }
+    },
+    "info": {
+      "artifact_uri": "file:///mlruns/fde3bf9cb6324477824c6f3725ca070c/artifacts",
+      "end_time": 1771513107842,
+      "experiment_id": "1",
+      "lifecycle_stage": "active",
+      "run_id": "fde3bf9cb6324477824c6f3725ca070c",
+      "run_uuid": "fde3bf9cb6324477824c6f3725ca070c",
+      "start_time": 1771513107794,
+      "status": "FINISHED",
+      "user_id": "root"
+    }
+  },
+  {
+    "data": {
+      "metrics": {
+        "train_rmse": 307295.5976804504,
+        "train_mse": 94430584353.78523,
+        "train_r2": 0.549071639784239,
+        "validation_rmse": 341749.9735861974,
+        "validation_mse": 116793044446.16664,
+        "validation_r2": 0.4386297081718271,
+        "test_rmse": 338625.6701904285,
+        "test_mse": 114667344511.91685,
+        "test_r2": 0.449057980372933
+      },
+      "params": {
+        "loss_function": "MAE",
+        "iterations": "4000",
+        "depth": "8",
+        "learning_rate": "0.05",
+        "early_stopping_rounds": "200",
+        "random_seed": "42",
+        "model_class": "CatBoostRegressor",
+        "raw_csv_sha256": "4440baedbd5aa47ca3dac76ef1aaa360c03b44e4a567a7d49047ef7f25e88f8d"
+      },
+      "tags": {
+        "mlflow.user": "root",
+        "mlflow.source.name": "/app/src/london_housing_ai/train_main.py",
+        "mlflow.source.type": "LOCAL",
+        "mlflow.runName": "london_housing_run"
+      }
+    },
+    "info": {
+      "artifact_uri": "file:///mlruns/014ba0d7caf1420b86d1240a2335dad2/artifacts",
+      "end_time": 1771510117977,
+      "experiment_id": "1",
+      "lifecycle_stage": "active",
+      "run_id": "014ba0d7caf1420b86d1240a2335dad2",
+      "run_uuid": "014ba0d7caf1420b86d1240a2335dad2",
+      "start_time": 1771510107305,
+      "status": "FINISHED",
+      "user_id": "root"
+    }
+  }
+]
 ```
 
 ### Predict Price
@@ -79,9 +251,8 @@ Response:
 |-------|------|----------|-------------|---------|
 | postcode | string | Yes | UK postcode (full or partial) | "SW1A 1AA" or "SW1A" |
 | property_type | string | Yes | F=Flat, T=Terraced, S=Semi, D=Detached | "F" |
-| bedrooms | integer | Yes | Number of bedrooms (1-10) | 2 |
-| bathrooms | integer | Yes | Number of bathrooms (1-5) | 1 |
-| area_sqft | float | Yes | Floor area in square feet (100-5000) | 850 |
+| is_new_build | string | No | Y/N flag for new build (defaults to "N") | "N" |
+| is_leasehold | string | No | Y/N flag for leasehold (defaults to "N") | "N" |
 
 ## Local Development
 
@@ -147,7 +318,7 @@ poetry run pytest -v -m "not gcs"
 
 ### View API Docs
 
-Visit <http://localhost:8000/docs> (Swagger UI)
+Visit <http://localhost:7777/docs> (Swagger UI)
 
 ## Deployment
 
