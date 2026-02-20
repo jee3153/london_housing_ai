@@ -6,7 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from london_housing_ai.api.app import create_app
-from london_housing_ai.api.schemas import ArtifactSummary, RunSummary
+from london_housing_ai.api.schemas import ArtifactSummary
 from london_housing_ai.api.services import mlflow_service
 
 
@@ -127,27 +127,33 @@ def test_predict_success(monkeypatch: pytest.MonkeyPatch, client: TestClient) ->
 def test_mlflow_runs_endpoint(
     monkeypatch: pytest.MonkeyPatch, client: TestClient
 ) -> None:
-    tz = dt.timezone.utc
     runs = [
-        RunSummary(
-            run_id="run1",
-            status="FINISHED",
-            start_time=dt.datetime(2025, 1, 1, tzinfo=tz),
-            end_time=dt.datetime(2025, 1, 1, 0, 5, tzinfo=tz),
-        )
+        {
+            "data": {
+                "metrics": {"validation_rmse": 123.45},
+                "params": {"model_class": "CatBoostRegressor"},
+                "tags": {"mlflow.runName": "run-1"},
+            },
+            "info": {
+                "artifact_uri": "mlflow-artifacts:/0/run1/artifacts",
+                "end_time": 1735689900000,
+                "experiment_id": "0",
+                "lifecycle_stage": "active",
+                "run_id": "run1",
+                "run_uuid": "run1",
+                "start_time": 1735689600000,
+                "status": "FINISHED",
+                "user_id": "tester",
+            },
+        }
     ]
-    monkeypatch.setattr(
-        mlflow_service, "get_experiment_name", lambda: "LondonHousingAI"
-    )
-    monkeypatch.setattr(
-        mlflow_service, "list_run_summaries", lambda limit=30: runs[:limit]
-    )
+    monkeypatch.setattr(mlflow_service, "list_runs_payload", lambda limit=30: runs[:limit])
 
     resp = client.get("/mlflow/runs?limit=1")
     assert resp.status_code == 200
     payload = resp.json()
-    assert payload["experiment_name"] == "LondonHousingAI"
-    assert payload["runs"][0]["run_id"] == "run1"
+    assert payload[0]["info"]["run_id"] == "run1"
+    assert payload[0]["data"]["params"]["model_class"] == "CatBoostRegressor"
 
 
 def test_mlflow_artifacts_endpoint(

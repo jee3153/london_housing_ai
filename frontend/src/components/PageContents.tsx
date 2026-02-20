@@ -51,7 +51,8 @@ function PageContents() {
 }
 
 async function getLatestRuns(): Promise<MlflowRunResponse[]> {
-  const response = await fetch("http://localhost:7777/experiment_runs");
+  const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:7777";
+  const response = await fetch(`${API_BASE}/mlflow/runs`);
   if (!response.ok) {
     throw new Error(`Failed to fetch run metadata: ${response.statusText}`);
   }
