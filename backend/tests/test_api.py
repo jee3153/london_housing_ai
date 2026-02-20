@@ -147,7 +147,9 @@ def test_mlflow_runs_endpoint(
             },
         }
     ]
-    monkeypatch.setattr(mlflow_service, "list_runs_payload", lambda limit=30: runs[:limit])
+    monkeypatch.setattr(
+        mlflow_service, "list_runs_payload", lambda limit=30: runs[:limit]
+    )
 
     resp = client.get("/mlflow/runs?limit=1")
     assert resp.status_code == 200
