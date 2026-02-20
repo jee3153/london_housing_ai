@@ -5,9 +5,7 @@ RUN apt-get update && apt-get install -y build-essential libpq-dev && rm -rf /va
 
 WORKDIR /app
 
-COPY pyproject.toml poetry.lock* ./
-
-RUN pip install poetry
+COPY pyproject.toml poetry.lock ./
 
 # Install Poetry and configure it to install system-wide
 RUN pip install poetry \

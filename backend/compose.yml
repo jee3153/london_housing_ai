@@ -47,7 +47,7 @@ services:
     environment:
       GOOGLE_APPLICATION_CREDENTIALS: /app/credentials/service-account.json
     ports:
-      - "5000:5000"
+      - "5001:5000"
     volumes:
       - ./credentials:/app/credentials
       - ./mlruns:/mlruns

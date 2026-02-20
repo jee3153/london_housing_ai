@@ -36,7 +36,11 @@ class PriceModel:
         }
         self.model = CatBoostRegressor(**params)
         self.log_data: dict[str, Any] = {
-            "params": {**params, "model_class": self.model.__class__.__name__},
+            "params": {
+                **params,
+                "model_class": self.model.__class__.__name__,
+                "log_target": cfg.log_target,
+            },
             "artifacts": [],
             "metrics": {},
             "text": {},
