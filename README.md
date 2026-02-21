@@ -11,8 +11,8 @@ This project addresses that pain by automating the data ingestion, cleaning, and
 ## 🚀 Live Demo
 
 - **Frontend:** <https://your-app.vercel.app>
-- **Backend API:** <https://your-api.railway.app>
-- **API Docs:** <https://your-api.railway.app/docs> (FastAPI Swagger)
+- **Backend API:** <https://londonhousingai-production.up.railway.app>
+- **API Docs:** <https://londonhousingai-production.up.railway.app/docs> (FastAPI Swagger)
 
 ## 📊 Project Overview
 

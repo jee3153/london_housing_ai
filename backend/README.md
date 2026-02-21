@@ -318,9 +318,11 @@ poetry run pytest -v -m "not gcs"
 
 ### View API Docs
 
-Visit <http://localhost:7777/docs> (Swagger UI)
+Visit <https://londonhousingai-production.up.railway.app/docs> (Swagger UI)
 
 ## Deployment
+
+<https://londonhousingai-production.up.railway.app>
 
 ### Railway
 
@@ -340,7 +342,7 @@ Railway will auto-detect Dockerfile and deploy.
 ### Environment Variables (Railway)
 
 - `MLFLOW_TRACKING_URI`: MLflow server URL
-- `PORT`: Auto-set by Railway (default: 8000)
+- `PORT`: Auto-set by Railway (default: 7777)
 
 ## Architecture
 
