@@ -79,6 +79,10 @@ def get_artifact_path() -> str:
     return os.getenv("MLFLOW_ARTIFACT_PATH", "catboost_model")
 
 
+def get_model_dir() -> Optional[str]:
+    return os.getenv("MLFLOW_MODEL_DIR")
+
+
 @lru_cache(maxsize=1)
 def get_client() -> MlflowClient:
     tracking_uri = get_tracking_uri()
@@ -204,6 +208,9 @@ def load_model_for_run(run_id: str):
     try:
         return mlflow_catboost.load_model(model_uri)
     except Exception:
+        configured_model_dir = get_model_dir()
+        if configured_model_dir and Path(configured_model_dir).exists():
+            return mlflow_catboost.load_model(configured_model_dir)
         model_for_run_dir = _model_artifacts_dir_for_run(run_id)
         if model_for_run_dir and model_for_run_dir.exists():
             return mlflow_catboost.load_model(str(model_for_run_dir))
