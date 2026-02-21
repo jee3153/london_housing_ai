@@ -1,0 +1,27 @@
+From python:3.12-slim
+
+# Install system dependencies for psycopg2, etc.
+RUN apt-get update && apt-get install -y build-essential libpq-dev && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY pyproject.toml poetry.lock ./
+
+# Install Poetry and configure it to install system-wide
+RUN pip install poetry \
+    && poetry config virtualenvs.create false \
+    && poetry install --no-interaction --no-root
+
+COPY . .
+
+ENV PYTHONPATH=/app/src
+# for local paths in Linux container, use file:///absolute/path
+ENV MLFLOW_TRACKING_URI=file:///app/mlruns
+ENV MLFLOW_ARTIFACT_URI=file:///app/mlruns
+ENV MLFLOW_ARTIFACT_PATH=catboost_model
+ENV MLFLOW_MODEL_NAME=london_housing_model
+ENV MLFLOW_RUN_ID=6cb0c6846874447786ae03c306bbc05f
+
+EXPOSE 7777
+
+CMD ["uvicorn", "london_housing_ai.api.main_api:app", "--host", "0.0.0.0", "--port", "7777"]

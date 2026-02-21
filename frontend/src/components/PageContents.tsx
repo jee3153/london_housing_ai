@@ -41,7 +41,10 @@ function PageContents() {
 
       <TabsContent value={OVERVIEW}> … overview section … </TabsContent>
       <TabsContent value={MODEL_COMPARISON}>
-        <ModelPerformance runs={runs} />
+        {error ? <div className="text-center text-gray-400 mt-8">Model comparison requires local MLflow server.{" "}
+          <a href="https://github.com/jee3153/london_housing_ai" className="underline">Run locally</a> to see full dashboard.
+        </div> : <ModelPerformance runs={runs} />}
+
       </TabsContent>
       <TabsContent value={DATA_QUALITY}> … data quality section … </TabsContent>
       <TabsContent value={UPLOAD_DATA}> … upload data section … </TabsContent>

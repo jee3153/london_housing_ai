@@ -3,9 +3,10 @@ from __future__ import annotations
 import datetime as dt
 import os
 from functools import lru_cache
+from pathlib import Path
 from typing import List, Optional
+from urllib.parse import urlparse
 
-import mlflow
 import mlflow.catboost as mlflow_catboost
 from mlflow.entities import Experiment, Run, RunStatus
 from mlflow.tracking import MlflowClient
@@ -13,8 +14,61 @@ from mlflow.tracking import MlflowClient
 from london_housing_ai.api.schemas import ArtifactSummary, RunSummary
 
 
+def _normalize_tracking_uri(uri: Optional[str]) -> Optional[str]:
+    if not uri:
+        return uri
+    value = uri.strip()
+    if value.startswith("file://") and not value.startswith("file:///"):
+        parsed = urlparse(value)
+        if parsed.netloc:
+            return f"file:///{parsed.netloc}{parsed.path}"
+    return value
+
+
 def get_tracking_uri() -> Optional[str]:
-    return os.getenv("MLFLOW_TRACKING_URI")
+    return _normalize_tracking_uri(os.getenv("MLFLOW_TRACKING_URI"))
+
+
+def _tracking_local_path() -> Optional[Path]:
+    tracking_uri = get_tracking_uri()
+    if not tracking_uri:
+        return None
+    parsed = urlparse(tracking_uri)
+    if parsed.scheme != "file":
+        return None
+    return Path(parsed.path)
+
+
+def _run_artifact_path(run_id: str, artifact_path: str) -> Optional[Path]:
+    root = _tracking_local_path()
+    if root is None:
+        return None
+    return root / run_id / "artifacts" / artifact_path
+
+
+def _model_artifacts_dir_for_run(run_id: str) -> Optional[Path]:
+    root = _tracking_local_path()
+    if root is None:
+        return None
+    models_dir = root / "models"
+    if not models_dir.exists():
+        return None
+
+    for model_dir in models_dir.iterdir():
+        if not model_dir.is_dir():
+            continue
+        artifacts_dir = model_dir / "artifacts"
+        mlmodel_path = artifacts_dir / "MLmodel"
+        if not mlmodel_path.exists():
+            continue
+        try:
+            content = mlmodel_path.read_text(encoding="utf-8")
+        except Exception:
+            continue
+        for line in content.splitlines():
+            if line.startswith("run_id:") and line.split(":", 1)[1].strip() == run_id:
+                return artifacts_dir
+    return None
 
 
 def get_experiment_name() -> str:
@@ -65,6 +119,11 @@ def list_recent_finished_runs(
 
 
 def get_latest_finished_run_id() -> Optional[str]:
+    # Allow hardcoding for Railway deployment where no MLflow server exists
+    hardcoded = os.getenv("MLFLOW_RUN_ID")
+    if hardcoded:
+        return hardcoded
+
     client = get_client()
     experiment = get_experiment(client, get_experiment_name())
     if experiment is None:
@@ -142,14 +201,29 @@ def list_runs_payload(limit: int = 30):
 def load_model_for_run(run_id: str):
     artifact_path = get_artifact_path()
     model_uri = f"runs:/{run_id}/{artifact_path}"
-    return mlflow_catboost.load_model(model_uri)
+    try:
+        return mlflow_catboost.load_model(model_uri)
+    except Exception:
+        model_for_run_dir = _model_artifacts_dir_for_run(run_id)
+        if model_for_run_dir and model_for_run_dir.exists():
+            return mlflow_catboost.load_model(str(model_for_run_dir))
+        direct_model_dir = _run_artifact_path(run_id, artifact_path)
+        if direct_model_dir and direct_model_dir.exists():
+            return mlflow_catboost.load_model(str(direct_model_dir))
+        raise
 
 
 def download_artifact_for_run(
     run_id: str, artifact_path: str, dst_path: Optional[str] = None
 ) -> str:
-    client = get_client()
-    return client.download_artifacts(run_id, artifact_path, dst_path)
+    try:
+        client = get_client()
+        return client.download_artifacts(run_id, artifact_path, dst_path)
+    except Exception:
+        direct_artifact = _run_artifact_path(run_id, artifact_path)
+        if not direct_artifact or not direct_artifact.exists():
+            raise
+        return str(direct_artifact)
 
 
 def run_uses_log_target(run_id: str, default: bool = True) -> bool:
