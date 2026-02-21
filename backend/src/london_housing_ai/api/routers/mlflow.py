@@ -1,19 +1,18 @@
 from __future__ import annotations
 
+from typing import List
+
 from fastapi import APIRouter, HTTPException, Query
 
-from london_housing_ai.api.schemas import ArtifactsResponse, RunsResponse
+from london_housing_ai.api.schemas import ArtifactsResponse, MlflowRunRecord
 from london_housing_ai.api.services import mlflow_service
 
 router = APIRouter(prefix="/mlflow", tags=["mlflow"])
 
 
-@router.get("/runs", response_model=RunsResponse)
-def runs(limit: int = Query(default=30, ge=1, le=200)) -> RunsResponse:
-    return RunsResponse(
-        experiment_name=mlflow_service.get_experiment_name(),
-        runs=mlflow_service.list_run_summaries(limit=limit),
-    )
+@router.get("/runs", response_model=List[MlflowRunRecord])
+def runs(limit: int = Query(default=30, ge=1, le=200)) -> List[MlflowRunRecord]:
+    return mlflow_service.list_runs_payload(limit=limit)
 
 
 @router.get("/artifacts", response_model=ArtifactsResponse)

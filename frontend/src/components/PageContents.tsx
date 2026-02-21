@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 
-import { OVERVIEW, MODEL_COMPARISON, DATA_QUALITY, UPLOAD_DATA } from "../lib/constants";
+import { OVERVIEW, MODEL_COMPARISON, DATA_QUALITY, UPLOAD_DATA, PREDICT } from "../lib/constants";
 import type { MlflowRunListResponse, MlflowRunResponse } from "../types/mlflow";
 import ModelPerformance from "./model_performance/ModelPerformance";
 import { TabsContent } from "./ui/tabs";
+import PredictTab from './prediction/PredictTab'
 
 
 function PageContents() {
@@ -44,12 +45,14 @@ function PageContents() {
       </TabsContent>
       <TabsContent value={DATA_QUALITY}> … data quality section … </TabsContent>
       <TabsContent value={UPLOAD_DATA}> … upload data section … </TabsContent>
+      <TabsContent value={PREDICT}> <PredictTab /> </TabsContent>
     </div>
   );
 }
 
 async function getLatestRuns(): Promise<MlflowRunResponse[]> {
-  const response = await fetch("http://localhost:7777/experiment_runs");
+  const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:7777";
+  const response = await fetch(`${API_BASE}/mlflow/runs`);
   if (!response.ok) {
     throw new Error(`Failed to fetch run metadata: ${response.statusText}`);
   }

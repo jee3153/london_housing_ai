@@ -32,6 +32,29 @@ class RunsResponse(BaseModel):
     runs: List[RunSummary]
 
 
+class MlflowRunData(BaseModel):
+    metrics: dict[str, Any]
+    params: dict[str, Any]
+    tags: dict[str, Any]
+
+
+class MlflowRunInfo(BaseModel):
+    artifact_uri: Optional[str] = None
+    end_time: Optional[int] = None
+    experiment_id: Optional[str] = None
+    lifecycle_stage: Optional[str] = None
+    run_id: str
+    run_uuid: str
+    start_time: Optional[int] = None
+    status: str
+    user_id: Optional[str] = None
+
+
+class MlflowRunRecord(BaseModel):
+    data: MlflowRunData
+    info: MlflowRunInfo
+
+
 class ArtifactsResponse(BaseModel):
     run_id: str
     artifacts: List[ArtifactSummary]
