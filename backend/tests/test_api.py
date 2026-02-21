@@ -29,6 +29,26 @@ def test_cors_allows_configured_origin(client: TestClient) -> None:
     assert resp.headers.get("access-control-allow-origin") == "http://example.com"
 
 
+def test_cors_allows_vercel_preview_origin_via_regex(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("CORS_ALLOW_ORIGINS", "http://example.com")
+    monkeypatch.setenv("CORS_ALLOW_ORIGIN_REGEX", r"^https://.*\.vercel\.app$")
+    app = create_app()
+    client = TestClient(app)
+
+    origin = "https://london-housing-cwls5qopb-jennys-projects-745ba178.vercel.app"
+    resp = client.options(
+        "/health",
+        headers={
+            "Origin": origin,
+            "Access-Control-Request-Method": "GET",
+        },
+    )
+    assert resp.status_code in (200, 204)
+    assert resp.headers.get("access-control-allow-origin") == origin
+
+
 def test_health_degraded_when_no_runs(
     monkeypatch: pytest.MonkeyPatch, client: TestClient
 ) -> None:

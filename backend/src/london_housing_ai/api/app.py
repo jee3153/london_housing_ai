@@ -27,6 +27,10 @@ def _parse_csv_env(name: str, default: List[str]) -> List[str]:
 
 def _add_cors(app: FastAPI) -> None:
     allow_origins = _parse_csv_env("CORS_ALLOW_ORIGINS", ["http://localhost:5173"])
+    # Vercel preview deployments use rotating subdomains, so allow them by regex.
+    allow_origin_regex = os.getenv(
+        "CORS_ALLOW_ORIGIN_REGEX", r"^https://.*\.vercel\.app$"
+    )
     allow_methods = _parse_csv_env("CORS_ALLOW_METHODS", ["*"])
     allow_headers = _parse_csv_env("CORS_ALLOW_HEADERS", ["*"])
     allow_credentials = os.getenv("CORS_ALLOW_CREDENTIALS", "true").lower() == "true"
@@ -34,6 +38,7 @@ def _add_cors(app: FastAPI) -> None:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=allow_origins,
+        allow_origin_regex=allow_origin_regex,
         allow_credentials=allow_credentials,
         allow_methods=allow_methods,
         allow_headers=allow_headers,
