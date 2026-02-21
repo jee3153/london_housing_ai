@@ -172,6 +172,7 @@ london_housing_ai/
 
 ## 🔮 Future Improvements
 
+- [ ] GCS-backed MLflow artifact store (currently bundled in Docker image)
 - [ ] Automated data ingestion (Airflow for scheduled retraining)
 - [ ] A/B testing framework (gradual model rollout)
 - [ ] Data drift monitoring (track feature distributions over time)
