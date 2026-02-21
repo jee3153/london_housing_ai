@@ -22,6 +22,8 @@ ENV MLFLOW_ARTIFACT_PATH=catboost_model
 ENV MLFLOW_MODEL_NAME=london_housing_model
 ENV MLFLOW_RUN_ID=6cb0c6846874447786ae03c306bbc05f
 ENV MLFLOW_MODEL_DIR=/app/artifacts/model
+ENV LOOKUP_TABLE_FILE=/app/artifacts/lookup_tables.json
+ENV CORS_ALLOW_ORIGINS=https://london-housing-ai.vercel.app,https://london-housing-2m2k7jcvp-jennys-projects-745ba178.vercel.app
 
 EXPOSE 7777
 
