@@ -1,4 +1,4 @@
-import { tabs, OVERVIEW } from '../lib/constants'
+import { tabs, PREDICT } from '../lib/constants'
 import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
 import React from 'react'
 import PageContents from './PageContents';
@@ -7,7 +7,7 @@ interface TabsContainerProps {
     defaultValue?: string;
 }
 
-export const TabContainer: React.FC<TabsContainerProps> = ({ defaultValue = OVERVIEW }) => {
+export const TabContainer: React.FC<TabsContainerProps> = ({ defaultValue = PREDICT }) => {
     return (
         <Tabs defaultValue={defaultValue} className="w-full">
             <div className='sticky top-0 bg-white z-20 border-b w-screen'>

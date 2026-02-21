@@ -39,13 +39,13 @@ function PageContents() {
       {loading && <div>Loading latest run data…</div>}
       {error && <div className="text-red-500">{error}</div>}
 
+      <TabsContent value={PREDICT}> <PredictTab /> </TabsContent>
       <TabsContent value={OVERVIEW}> … overview section … </TabsContent>
       <TabsContent value={MODEL_COMPARISON}>
         <ModelPerformance runs={runs} />
       </TabsContent>
       <TabsContent value={DATA_QUALITY}> … data quality section … </TabsContent>
       <TabsContent value={UPLOAD_DATA}> … upload data section … </TabsContent>
-      <TabsContent value={PREDICT}> <PredictTab /> </TabsContent>
     </div>
   );
 }
