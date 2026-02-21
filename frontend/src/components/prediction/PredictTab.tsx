@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { PredictionRequest, PredictionResponse } from "../../types/predict";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 
-const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:7777";
+const API_BASE = import.meta.env.VITE_API_URL ?? "/api";
 
 const PROPERTY_TYPES = [
     { value: "F", label: "Flat / Maisonette" },
