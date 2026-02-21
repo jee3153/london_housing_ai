@@ -1,0 +1,42 @@
+artifact_path: file:///mlruns/models/m-ed5be2a5328d483b824d45996c777efa/artifacts
+flavors:
+  catboost:
+    catboost_version: 1.2.8
+    code: null
+    data: model.cb
+    model_type: CatBoostRegressor
+    save_format: cbm
+  python_function:
+    data: model.cb
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.catboost
+    python_version: 3.12.12
+is_signature_from_type_hint: false
+mlflow_version: 3.6.0
+model_id: m-ed5be2a5328d483b824d45996c777efa
+model_size_bytes: 2566791
+model_uuid: m-ed5be2a5328d483b824d45996c777efa
+prompts: null
+run_id: 6cb0c6846874447786ae03c306bbc05f
+saved_input_example_info:
+  artifact_path: input_example.json
+  pandas_orient: split
+  serving_input_path: serving_input_example.json
+  type: dataframe
+signature:
+  inputs: '[{"type": "string", "name": "property_type", "required": true}, {"type":
+    "string", "name": "is_new_build", "required": true}, {"type": "string", "name":
+    "is_leasehold", "required": true}, {"type": "string", "name": "district", "required":
+    true}, {"type": "long", "name": "sold_month", "required": true}, {"type": "string",
+    "name": "advanced_property_type", "required": true}, {"type": "string", "name":
+    "property_type_and_tenure", "required": true}, {"type": "string", "name": "property_type_and_district",
+    "required": true}, {"type": "datetime", "name": "date", "required": true}, {"type":
+    "long", "name": "sold_year", "required": true}, {"type": "double", "name": "borough_price_trend",
+    "required": true}, {"type": "double", "name": "district_yearly_medians", "required":
+    true}, {"type": "double", "name": "avg_price_last_half", "required": true}]'
+  outputs: '[{"type": "double", "required": true}]'
+  params: null
+type_hint_from_example: false
+utc_time_created: '2026-02-20 10:35:42.398644'
