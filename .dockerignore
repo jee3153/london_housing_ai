@@ -1,0 +1,15 @@
+# Keeps the Docker build context small/fast for Render builds (dockerContext: .)
+.git
+frontend
+docs
+terraform
+tmp
+output
+backend/.mypy_cache
+backend/.pytest_cache
+backend/catboost_info
+backend/tests
+backend/credentials
+backend/data_lake
+backend/__pycache__
+**/__pycache__
