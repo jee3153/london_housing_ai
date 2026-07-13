@@ -1,0 +1,44 @@
+services:
+  - type: web
+    name: london-housing-ai-api
+    env: docker
+    plan: free
+    region: oregon # change to whichever Render region is closest to your users/frontend
+    branch: main
+    dockerfilePath: ./backend/Dockerfile.render
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeploy: true
+    buildFilter:
+      paths:
+        - backend/**
+        - render.yaml
+    envVars:
+      - key: PYTHONPATH
+        value: /app/src
+
+      # Model is baked into the image (backend/artifacts/), so no live MLflow
+      # server or GCS credentials are required to serve predictions.
+      - key: MLFLOW_TRACKING_URI
+        value: file:///app/mlruns
+      - key: MLFLOW_ARTIFACT_URI
+        value: file:///app/mlruns
+      - key: MLFLOW_ARTIFACT_PATH
+        value: catboost_model
+      - key: MLFLOW_MODEL_NAME
+        value: london_housing_model
+      # Pin the run whose model/lookup tables ship in backend/artifacts/.
+      # Update this (and re-deploy) whenever you commit a newly trained run.
+      - key: MLFLOW_RUN_ID
+        value: 6cb0c6846874447786ae03c306bbc05f
+      - key: MLFLOW_MODEL_DIR
+        value: /app/artifacts/model
+      - key: LOOKUP_TABLE_FILE
+        value: /app/artifacts/lookup_tables.json
+
+      # CORS: add your production frontend origin(s), comma-separated.
+      # Vercel preview URLs are already allowed via the regex below.
+      - key: CORS_ALLOW_ORIGINS
+        value: http://localhost:5173
+      - key: CORS_ALLOW_ORIGIN_REGEX
+        value: ^https://.*\.vercel\.app$
